@@ -1,0 +1,21 @@
+id: 413
+course_type: revolution
+difficulty_level: 2
+time_needed: About 8 hours
+title: Introduction to Revolution R Enterprise for Big Data Analytics
+author_field: Revolution Analytics
+description: Revolution R Enterprise allows R users to process, visualize, and model
+  terabyte- class data sets at a fraction of the time of legacy products
+  without requiring expensive or specialized hardware. This is an introductory course
+  for accomplished R users to experience the functionality of Revolution R Enterprise.<br><br> We like feedback; <a href="http://www.surveymonkey.com/s/AcademyRDataCamp_1" target = "_blank">Let us know how you experienced this course!</a>
+author_bio: Revolution Analytics was founded in 2007 to foster the R Community, as well as 
+  support the growing needs of commercial users. Our name derives from combining the letter "R" 
+  with the word "evolution." It speaks to the ongoing development of the R language from an 
+  open-source academic research tool into commercial applications for industrial use.
+  Through our Revolution R products, we aim to make the power of predictive analytics accessible 
+  to every type of user & budget. We provide free and premium software and services that bring 
+  high-performance, productivity and ease-of-use to R -- enabling statisticians and scientists 
+  to derive greater meaning from large sets of critical data in record time.
+video_link: //player.vimeo.com/video/108858170
+chapters:
+- chapter1.Rmd: 
