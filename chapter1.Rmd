@@ -1,0 +1,272 @@
+---
+title_meta  : Chapter 1
+title       : Introduction
+description : Introduction to the eXternal Data Frame (XDF) file format.
+attachments :
+ slides_link: 
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Introduction to the XDF File Format 
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141145803
+```
+
+
+
+
+
+
+--- type:MultipleChoiceExercise contains_graph:FALSE
+
+## Exercise 1: R and Big Data
+
+Why does open-source R have a hard time analyzing big data sets?
+
+*** =instructions
+
+- R analyzes data from the hard drive, and large datasets can be many terabytes in size.
+- In R, data resides in memory by default, and large datasets are too big for the memory capacity of many computers.
+- R relies on other scripting languages to be able to perform any sort of computation on big datasets. 
+- R has so many system configuration settings that it becomes a complicated affair to adjust it to handle big datasets. 
+
+*** =hint
+
+Review the course video and choose the selection that most closely matches the addressed topic.
+
+*** =pre_exercise_code
+
+```{r,eval=FALSE}
+```
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_mc(correct = 2, 
+        no_selection_msg = "Please make a selection!", 
+        feedback_msgs = c("Incorrect - R doesn't store data on the hard drive by default.",
+                          "Correct!",
+                          "Incorrect - R does sometimes make calls to other programming languages, but that usually *improves* R's performance.",
+                          "Incorrect - R usually needs very little special configuration."
+))
+
+```
+
+
+
+
+
+
+--- type:MultipleChoiceExercise contains_graph:FALSE
+
+## Exercise 2: Advantages of PEMAs
+
+What are some of the advantages of utilizing PEMAs for data processing and 
+analysis? Pick the answer with all the true statements.
+
+- a. PEMAs allow you to analyze data in chunks that are managable with R's memory limitations.
+- b. PEMAs consolidate all data in a central location so that it's easy to find and access. 
+- c. PEMAs store entire data sets in your computer's memory, allowing you to quickly access and analyze data.
+- d. PEMAs can run in parallel, allowing you to distribute complex computations among many computing resources.
+
+
+*** =instructions
+- a, b, d
+- b, c
+- b, c, d
+- a, d
+
+*** =hint
+
+Review the course video and choose the selection that most closely matches the addressed topic.
+
+*** =pre_exercise_code
+
+```{r,eval=FALSE}
+```
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_mc(correct = 4, 
+        no_selection_msg = "Please make a selection!", 
+        feedback_msgs = c("Incorrect - PEMAs work well with distributed data.",
+                          "Incorrect - Open-Source R stores all data in memory, but PEMAs work regardless of where the data is stored.",
+                          "Incorrect - PEMAs work with distributed data, whether in memory or on hard drives.",
+                          "Correct - PEMAs let users surpass R's memory limits and work in parallel."
+))
+
+```
+
+
+
+
+
+
+--- type:MultipleChoiceExercise contains_graph:FALSE
+
+## Exercise 3: Advantages of Column Orientation
+
+Why is it beneficial for XDF files to be column-oriented rather than row-oriented?
+
+
+*** =instructions
+
+- All the values of a single variable are stored together on-disk, which makes 
+  them faster to query.
+- All the values relating to one record/observation are stored together on-disk, 
+  which makes them faster to query.
+- Column orientation ensures that a variable is never split across chunks.
+- The most widely-used databases (SQL Server, MySQL, etc.) are column-oriented
+
+
+*** =hint
+
+Review the course video and choose the selection that most closely matches the addressed topic.
+
+*** =pre_exercise_code
+
+```{r,eval=FALSE}
+```
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_mc(correct = 1, 
+        no_selection_msg = "Please make a selection!", 
+        feedback_msgs = c("Correct!",
+                          "Incorrect - this is the case for row-oriented data.",
+                          "Incorrect - variables must be split across chunks in order to take advantage of distributed computation.",
+                          "Incorrect - the most widely-used databases are all row-oriented (although column-oriented databases are becoming increasingly popular)"
+))
+
+```
+
+
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 4: Import Data with rxImport
+
+Use rxImport to import data from a csv file to xdf format.
+
+*** =instructions
+
+`rxImport` is the key function for importing data into an XDF file. In this
+exercise, use `rxImport` to convert a CSV file (`mortDefaultCsv`) into an XDF
+file (`mortDefaultXdf`), and then check the results using `rxGetInfo`.
+
+
+*** =hint
+
+You need two arguments in `rxImport`: `inData` should be the pointer to the CSV
+file, and `outFile` should be the point to the XDF file you want to create.
+
+`rxGetInfo` just needs the path to that XDF file - although you might also want
+to set `getVarInfo` to `TRUE` to see some information about the variables, or
+`numRows` to 5 to see the first few rows of the new XDF file.
+
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+file.remove("mortDefaultSmall2009.xdf")
+```
+
+*** =solution
+```{r, eval=FALSE}
+# Create a pointer to the CSV file
+mortDefaultCsv <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall2009.csv")
+
+# Create a pointer to the XDF file you need to create
+mortDefaultXdf <- "mortDefaultSmall2009.xdf"
+
+# Use rxImport to import the data into xdf format
+rxImport(inData = mortDefaultCsv, outFile = mortDefaultXdf, overwrite = TRUE)
+
+# Use rxGetInfo to check the new xdf file
+rxGetInfo(mortDefaultXdf, getVarInfo=TRUE, numRows = 5)
+```
+
+*** =sample_code
+```{r, eval=FALSE}
+# Create a pointer to the CSV file
+mortDefaultCsv <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall2009.csv")
+
+# Create a pointer to the XDF file you need to create
+mortDefaultXdf <- "mortDefaultSmall2009.xdf"
+
+
+# Use rxImport to import the data into xdf format
+
+
+# Use rxGetInfo to check the new xdf file
+
+
+
+```
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxImport",
+                   not_typed_msg = "Be sure to call the 'rxImport' function!")
+
+test_student_typed("inData = mortDefaultCsv",
+                   not_typed_msg = "Make sure you use the 'mortDefaultCsv' object as your 'inData' argument. It's a pointer to the CSV file we're trying to import.")
+
+
+test_student_typed("outFile = mortDefaultXdf",
+                   not_typed_msg = "Make sure you use the 'mortDefaultXdf' object as your 'outFile' argument. It's just the path to the XDF file we're trying to create.")
+
+test_student_typed('rxGetInfo',
+                   not_typed_msg = "It's always a good idea to check that your file was imported correctly, so use the function 'rxGetInfo' on your new XDF file (mortDefaultXdf).")
+
+
+
+test_expression_output(rxGetInfo("mortDefaultSmall2009.xdf"),
+                       incorrect_msg = "Your 'inner_joined' data.frame doesn't seem to have the right number of rows - check your code again.")
+
+
+success_msg("Off to a good start!")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
