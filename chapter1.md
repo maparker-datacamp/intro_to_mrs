@@ -1,10 +1,10 @@
 ---
-title_meta  : Chapter 1
 title       : Introduction
 description : Introduction to the eXternal Data Frame (XDF) file format.
 attachments :
- slides_link: 
+  slides_link : https://s3.amazonaws.com/assets.datacamp.com/course/teach/slides_example.pdf
 mode        : selfcontained
+
 
 
 --- type:VideoExercise
