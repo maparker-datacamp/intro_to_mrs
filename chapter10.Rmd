@@ -1,0 +1,659 @@
+---
+title_meta  : Chapter 3
+title       : Factors and Conclusion
+description : Create and modify factors with `rxFactors`
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## rxFactors 
+
+*** =video_link
+
+```{r,eval=FALSE}  
+//player.vimeo.com/video/141147219
+```
+
+--- type:NormalExercise xp:50
+
+## Exercise 5: Creating Factors with rxFactors
+
+Use `rxFactors` to convert the `Year` variable into a factor.
+
+
+*** =instructions
+
+There are a couple of ways to create factors in RRE, but the `rxFactors` function
+is the most powerful (and often the easiest). To simply create a factor from an
+existing variable, you can use the `factorInfo` argument.
+
+`factorInfo` takes a list. Each element of that list should be another list that
+specifies the properties of the factor you're creating. Here's a simple example:
+
+    factorInfo = list(newVariableName = list(varName = "variableToConvert"))
+
+ - Use `rxFactors` to create a new variable called `FactorYear` from the existing
+   variable `Year`.
+
+
+
+*** =hint
+
+ - Replace `newVariableName` with the name of the variable you want to create
+   (in this case, `FactorYear`)
+
+ - Replace `variableToConvert` with the name of the variable you want to make into
+   a factor (in this case, `Year`)
+
+ - Note that `newVariableName` isn't quoted, but `variableToConvert` is. This is
+   just a quirk of R's list syntax, but it's important to remember.
+
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+set.seed(2015)
+
+djia_source <- RxXdfData( file.path(rxGetOption("sampleDataDir"), "DJIAdaily.xdf") )
+
+# Add a tempfile for sorting, and one for dropping the sorting variable
+djia_temp <- tempfile(fileext = ".xdf")
+djia_scrambled <- tempfile(fileext = ".xdf")
+
+# Add a random uniform
+rxDataStep(inData = djia_source,
+           outFile = djia_temp,
+           transforms = list(sortvar = runif(.rxNumRows))
+)
+
+# Sort by sortvar
+rxSort(inData = djia_temp, 
+       outFile = djia_temp,
+       sortByVars = "sortvar",
+       overwrite = TRUE)
+
+# Drop sortvar
+rxDataStep(inData = djia_temp,
+           outFile = djia_scrambled,
+           varsToDrop = "sortvar",
+           overwrite = TRUE)
+
+# Cleanup
+file.remove(djia_temp)
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+
+# Create a path to a new XDF file for the output
+djia_factor_year <- tempfile(fileext = ".xdf")
+
+
+# Examine the variable types in the current dataset
+rxGetVarInfo(djia_scrambled)
+
+
+# Create a factor from Year variable
+rxFactors(inData = djia_scrambled, 
+          outFile = djia_factor_year, 
+          factorInfo = ______________
+)
+
+
+# Examine the output
+rxGetVarInfo(djia_factor_year)
+
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+# Create a path to a new XDF file for the output
+djia_factor_year <- tempfile(fileext = ".xdf")
+
+# View current dataset
+rxGetVarInfo(djia_scrambled)
+
+# 
+# Create factor from Year variable
+rxFactors(inData = djia_scrambled, 
+          outFile = djia_factor_year, 
+          factorInfo = list(FactorYear = list(varName = "Year"))
+)
+
+
+# View new factor variable
+rxGetVarInfo(djia_factor_year)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+
+
+test_error()
+
+test_student_typed("rxFactors",
+                   not_typed_msg = "It doesn't appear that you made a call to rxFactors - start there!")
+
+test_student_typed("djia_scrambled",
+                   not_typed_msg = "Be sure to use 'djia_scrambled' as your dataset; it's already been created for you.")
+
+test_student_typed("djia_factor_year",
+                   not_typed_msg = "Be sure to pass 'djia_factor_year' to the outFile argument to store your results.")
+
+test_student_typed("factorInfo = ",
+                   not_typed_msg = "You'll need to use rxFactors' factorInfo argument.")
+
+test_student_typed("factorInfo = list(FactorYear = ",
+                   not_typed_msg = "The factorInfo argument takes a list - double-check your syntax.")
+
+test_student_typed("FactorYear = list(varName = 'Year')",
+                   not_typed_msg = 'You need to use a second list to let rxFactors know which variable to convert - like this: factorInfo = list(FactorYear = list(varName = "Year"))')
+
+
+# Check the results
+test_expression_result("FactorYear" %in% rxGetVarNames(djia_factor_year),
+                       incorrect_msg = "It doesn't look like the variable FactorYear was created on the djia_factor_year dataset - try again.")
+
+test_expression_output(rxGetVarInfo(djia_factor_year)[["FactorYear"]][["varType"]],
+                       incorrect_msg = "FactorYear was created, but it doesn't seem to be a factor - check your code again.")
+
+
+success_msg("Good work. That's the simplest way to create factors from other variables in RRE.")
+
+
+
+
+```
+
+*** =skills
+1, 3
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 6: Change a Factor's Sort Order
+
+Use `rxFactors` to change the sort order of a factor's levels
+
+
+*** =instructions
+
+By default, the levels in a factor created using `rxFactors` are created in the
+same order they appear in the data, which can result in strange level orders. For
+example, using the `FactorYear` variable you created in the last exercise puts
+1974 before 1973, followed by 2010, 2006, 1929... 
+
+Because the correct order
+of the values of `FactorYear` is their alphanumeric sort order, it's easiest to
+use the `sortLevels` option in `rxFactors` to automatically sort the levels.
+For example, we could sort the levels of `exampleFactor` like this:
+
+    factorInfo = list( exampleFactor = list(sortLevels = TRUE) )
+
+
+The next exercise will walk you through how to create custom sort orders.
+
+ - Use `rxFactors` with the `sortLevels` argument to put the levels of `FactorYear`
+   in the correct order.
+
+
+*** =hint
+
+ - Since there are 83 levels in `FactorYear` (1929-2010), and because the years
+   should sort correctly, `sortLevels` is probably the best choice.
+ - If you need to use `newLevels`, remember that R has a wide variety of commands
+   that make creating vectors easier (try `1929:2010`).
+
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+set.seed(2015)
+
+djia_source <- RxXdfData( file.path(rxGetOption("sampleDataDir"), "DJIAdaily.xdf") )
+
+# Add a tempfile for sorting, and one for dropping the sorting variable
+djia_temp <- tempfile(fileext = ".xdf")
+djia_factor_year <- tempfile(fileext = ".xdf")
+
+# Add a random uniform
+rxDataStep(inData = djia_source,
+           outFile = djia_temp,
+           transforms = list(sortvar = runif(.rxNumRows))
+)
+
+# Sort by sortvar
+rxSort(inData = djia_temp, 
+       outFile = djia_temp,
+       sortByVars = "sortvar",
+       overwrite = TRUE
+)
+
+
+# Create factor from Year variable
+rxFactors(inData = djia_temp, 
+          outFile = djia_factor_year, 
+          varsToDrop = "sortvar",
+          factorInfo = list(FactorYear = list(varName = "Year"))
+)
+
+# Cleanup
+file.remove(djia_temp)
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+
+# As you can see, the levels in the FactorYear variable aren't sorted correctly
+rxGetVarInfo(djia_factor_year)
+
+# And it has real consequences for analysis - these results are all out of order:
+rxSummary(Close ~ FactorYear, data = djia_factor_year)
+
+# So - use rxFactors to sort the levels of FactorYear
+rxFactors(inData = djia_factor_year, 
+          outFile = djia_factor_year, 
+          factorInfo = list( FactorYear = ___________,
+          overwrite = TRUE)
+
+
+# Check the results; 1929 should now be the first result, and 2010 the last:
+rxSummary(Close ~ FactorYear, data = djia_factor_year)
+
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+# As you can see, the levels in the FactorYear variable aren't sorted correctly
+rxGetVarInfo(djia_factor_year)
+
+# And it has real consequences for analysis - these results are all out of order:
+rxSummary(Close ~ FactorYear, data = djia_factor_year)
+
+# So - use rxFactors to sort the levels of FactorYear
+rxFactors(inData = djia_factor_year, 
+          outFile = djia_factor_year, 
+          factorInfo = list( FactorYear = list(sortLevels = TRUE) ), 
+          overwrite = TRUE)
+
+
+# Check the results; 1929 should now be the first result, and 2010 the last:
+rxSummary(Close ~ FactorYear, data = djia_factor_year)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+
+
+test_error()
+
+test_student_typed("rxFactors",
+                   not_typed_msg = "It doesn't appear that you made a call to rxFactors - start there!")
+
+test_student_typed("djia_factor_year",
+                   not_typed_msg = "Be sure to pass 'djia_factor_year' to the outFile argument to store your results.")
+
+test_student_typed("factorInfo = ",
+                   not_typed_msg = "You'll need to use rxFactors' factorInfo argument.")
+
+test_student_typed("factorInfo = list(FactorYear = ",
+                   not_typed_msg = "The factorInfo argument takes a list - double-check your syntax.")
+
+
+# Check the results
+test_expression_result("FactorYear" %in% rxGetVarNames(djia_factor_year),
+                       incorrect_msg = "It doesn't look like the variable FactorYear was created on the djia_factor_year dataset - try again.")
+
+test_expression_output(rxGetVarInfo(djia_factor_year)[["FactorYear"]][["varType"]],
+                       incorrect_msg = "FactorYear was created, but it doesn't seem to be a factor - check your code again.")
+
+test_expression_output(rxGetVarInfo(djia_factor_year)[["FactorYear"]][["varType"]][["levels"]],
+                       incorrect_msg = "Your factor levels don't seem to be in the right order. Try again.")
+
+
+
+
+success_msg("Nicely done.")
+
+
+```
+
+*** =skills
+1, 3
+
+
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 7: Custom Sorting Factors
+
+Use the `newLevels` argument to reverse the levels of `FactorYear`.
+
+
+
+*** =instructions
+
+When you need your levels in anything other than alphanumeric order, use the
+`newLevels` argument to set the order. `newLevels` takes a character vector that
+specifies *all* of the levels in the factor, in the desired order.
+
+In this exercise, use `newLevels` to reverse the order of the `FactorYear` levels,
+so that 2010 is the first level and 1928 is the last.
+
+
+ - `newLevels` will only take a *character* vector, so you may need to convert
+   your vector using `as.character`
+ - For factors with a large number of levels, it can be tedious to type out every one,
+so be sure to take advantage of R's tools for working with vectors (`seq()` will
+be particularly useful to you here).
+
+
+*** =hint
+
+ - To generate the full list of levels, use the function 
+ `seq(from = 2010, to = 1928)` - or its shortcut syntax, `2010:1928`
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+djia_source <- RxXdfData( file.path(rxGetOption("sampleDataDir"), "DJIAdaily.xdf") )
+djia_scrambled <- tempfile(fileext = ".xdf")
+
+rxSort(inData = djia_source, outFile = djia_scrambled,
+       sortByVars = "Volume",
+       overwrite = TRUE)
+
+djia_factor_year <- tempfile(fileext = ".xdf")
+
+# Create factors from Year variable
+rxFactors(inData = djia_scrambled, outFile = djia_factor_year, 
+          factorInfo = list(FactorYear = list(varName = "Year")), 
+          overwrite = TRUE)
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+
+# Create the custom sort order
+reversed_years <- __________
+
+# Sort using the custom order
+rxFactors(inData = djia_factor_year, outFile = djia_factor_year,
+          factorInfo = list( FactorYear = list(__________ = __________) ),
+          overwrite = TRUE)
+
+# Check the results
+rxGetVarInfo(djia_factor_year)
+
+```
+
+
+
+*** =solution
+
+```{r,eval=FALSE}
+
+# Create the custom sort order
+reversed_years <- as.character(2010:1928)
+
+# Sort using the custom order
+rxFactors(inData = djia_factor_year, outFile = djia_factor_year,
+          factorInfo = list( FactorYear = list(newLevels = reversed_years) ),
+          overwrite = TRUE)
+
+# View the data
+rxGetVarInfo(djia_factor_year)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+
+
+test_error()
+
+test_student_typed("rxFactors",
+                   not_typed_msg = "It doesn't appear that you made a call to rxFactors - start there!")
+
+test_student_typed("djia_factor_year",
+                   not_typed_msg = "Be sure to pass 'djia_factor_year' to the outFile argument to store your results.")
+
+test_student_typed("factorInfo = ",
+                   not_typed_msg = "You'll need to use rxFactors' factorInfo argument.")
+
+test_student_typed("factorInfo = list(FactorYear = ",
+                   not_typed_msg = "The factorInfo argument takes a list - double-check your syntax.")
+
+
+
+# Check the results
+test_expression_result("FactorYear" %in% rxGetVarNames(djia_factor_year),
+                       incorrect_msg = "It doesn't look like the variable FactorYear was created on the djia_factor_year dataset - try again.")
+
+test_expression_output(rxGetVarInfo(djia_factor_year)[["FactorYear"]][["varType"]],
+                       incorrect_msg = "FactorYear was created, but it doesn't seem to be a factor - check your code again.")
+
+test_expression_output(rxGetVarInfo(djia_factor_year)[["FactorYear"]][["varType"]][["levels"]],
+                       incorrect_msg = "Your factor levels don't seem to be in the right order. Try again.")
+
+
+
+
+success_msg("Well done. These lists can get complex, but you can always build them up one piece at a time.")
+
+```
+
+*** =skills
+1, 3
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 8: Recoding Factors
+
+Use `newLevels` to combine Tuesday, Wednesday, and Thursday into a single level
+
+*** =instructions
+
+In the last exercise, you used `newLevels` to specify all of the levels in a
+factor. Now, use `newLevels` to *combine* factors.
+
+Imagine that you want to analyze the Dow Jones Industrial Average results by day
+of week, but you think that Mondays and Fridays deserve special attention, while
+Tuesday, Wednesday, and Thursday can all be lumped together. You can create a
+new factor with just three levels to help you: Monday, Midweek, and Friday.
+
+You'll use the `newLevels` argument again, but with a new syntax. Instead of a 
+character vector, you'll pass a *named list* to `newLevels`. The *name* of each
+element in the list should be the new level you want to create, and the *value*
+of each element in the list should be the *old* level (or levels) that you want to
+map to the *new* level.
+
+For example, if I wanted to recode a month variable into a new quarter variable,
+the syntax would look like this:
+
+    quarter = list(varName = month,
+                   newLevels = list(Q1 = c("Jan", "Feb", "Mar"),
+                                    Q2 = c("Apr", "May", "Jun"),
+                                    Q3 = c("Jul", "Aug" "Sep"),
+                                    Q4 = c("Oct", "Nov", "Dec"))
+    )
+
+                                         
+The `quarter` variable will have one level for each element in `newLevels` 
+(`Q1`, `Q2`, `Q3`, `Q4`), each of which combines three months into one quarter.
+
+ - **Do the same for the `DayOfWeek` variable**, mapping Monday to `Monday`,
+Tuesday, Wednesday, and Thursday to a new level `Midweek`, and Friday to `Friday`.
+
+
+
+*** =hint
+
+ - Be sure that the new levels (on the left-hand side of the equation) are *not*
+   quoted, while the old levels (on the right-hand side) are. For example:
+   `Monday = "Monday"`
+   
+ - You'll need a total of three entries in the `newLevels` list
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+djia_source <- RxXdfData( file.path(rxGetOption("sampleDataDir"), "DJIAdaily.xdf") )
+
+
+djia_factor_year <- tempfile(fileext = ".xdf")
+
+# Create factors from Year variable
+rxFactors(inData = djia_source, outFile = djia_factor_year, 
+          factorInfo = list(FactorYear = list(varName = "Year")), 
+          overwrite = TRUE)
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+
+# Note the levels of DayOfWeek: Monday, Tuesday, Wednesday, Thursday, Friday
+rxGetVarInfo(djia_factor_year)
+
+# Use the blank space to recode Monday to Monday,
+# Tuesday, Wednesday, and Thursday to a new level called Midweek
+# and Friday to Friday
+rxFactors(inData = djia_factor_year, outFile = djia_factor_year, 
+          factorInfo = list(
+              DayRecoded = list(varName = "DayOfWeek",
+                                newLevels = list(__________))),
+          overwrite = TRUE)
+
+
+# View new factor levels
+rxGetVarInfo(djia_factor_year)
+
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+# Note the levels of DayOfWeek: Monday, Tuesday, Wednesday, Thursday, Friday
+rxGetVarInfo(djia_factor_year)
+
+# Use rxFactors to create a recoded DayOfWeek factor called DayRecoded
+rxFactors(inData = djia_factor_year, outFile = djia_factor_year, 
+          factorInfo = list(
+              DayRecoded = list(varName = "DayOfWeek",
+                                newLevels = list(Monday = "Monday",
+                                                 Midweek = c("Tuesday", "Wednesday", "Thursday"),
+                                                 Friday = "Friday"))),
+          overwrite = TRUE)
+
+
+# View new factor levels
+rxGetVarInfo(djia_factor_year)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+
+
+test_error()
+
+test_student_typed("rxFactors",
+                   not_typed_msg = "It doesn't appear that you made a call to rxFactors - start there!")
+
+test_student_typed("djia_factor_year",
+                   not_typed_msg = "Be sure to pass 'djia_factor_year' to the outFile argument to store your results.")
+
+test_student_typed("factorInfo = ",
+                   not_typed_msg = "You'll need to use rxFactors' factorInfo argument.")
+
+test_student_typed("factorInfo = list(",
+                   not_typed_msg = "The factorInfo argument takes a list - double-check your syntax.")
+
+
+
+# Check the results
+test_expression_result("FactorYear" %in% rxGetVarNames(djia_factor_year),
+                       incorrect_msg = "It doesn't look like the variable FactorYear was created on the djia_factor_year dataset - try again.")
+
+test_expression_output(rxGetVarInfo(djia_factor_year)[["FactorYear"]][["varType"]],
+                       incorrect_msg = "FactorYear was created, but it doesn't seem to be a factor - check your code again.")
+
+test_expression_output(rxGetVarInfo(djia_factor_year)[["FactorYear"]][["varType"]][["levels"]],
+                       incorrect_msg = "Your factor levels don't seem to be in the right order. Try again.")
+
+
+
+
+success_msg("Well done! Hopefully factors don't seem as intimidating now.")
+
+
+```
+
+*** =skills
+1, 3
+
+
+--- type:VideoExercise
+
+## Conclusion 
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141147215
+```
+

@@ -1,0 +1,203 @@
+---
+title_meta  : Chapter 2
+title       : Simple Imports
+description : Create an XDF file using the rxImport function
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+--- type:VideoExercise
+
+## Configuring rxImport 
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141145807
+```
+
+
+
+
+
+
+
+
+
+--- type:VideoExercise
+
+## colClasses and colInfo
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141145804
+```
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+
+## Exercise 5: rxImport Options
+
+You can specify various options when importing data with rxImport, such as how 
+to encode variables, what their names and factor levels should be, and whether 
+to keep or drop whole variables in the XDF file.
+
+*** =instructions
+
+Use the `rxImport` function as before, but this time you will add a few 
+arguments to specify how you want the data imported:  
+
+ - The `varsToKeep` argument takes a vector of variable names that you want to 
+   import into the xdf file. *Use `varsToKeep` to import the `creditScore`, 
+   `year`, and `default` variables.*
+
+ - The `colClasses` argument takes a vector which specifies the column types to
+   use when importing the data. *The `default` variable describes whether a 
+   person defaulted on their mortgage or not, so you should import it as a 
+   `logical` data type.*
+
+ - The `colInfo` argument lets you specify many import options for the variables
+   in your dataset. It looks something like this:
+   
+    colInfo = list(month = list(type = "factor", newName = "default_month")),
+   
+`colInfo` takes a `list` of variable names (`colInfo = list(month = `), and 
+each variable gets another list of options for importing that variable. In
+the example above, we're using the original `month` variable to create a new 
+`factor` variable called `"default_month"`. *Use `colInfo` to create a new
+`factor` out of the `year` variable called `default_year`*.
+
+ - The `overwrite` argument indicates whether an existing dataset should be 
+   overwritten. Be careful when setting this to TRUE! If TRUE, a data set that 
+   has the same name as **outFile** will be overwritten with the new imported 
+   file. *Overwrite the "mortDefaultSmall2009.xdf" file you created in the last 
+   exercise with the new version created by setting `varsToKeep`, `colClasses`,
+   and `colInfo`*.
+
+
+After you finish, use `rxGetInfo` to look at the new `mortDefaultXdf` data set.
+
+
+*** =hint
+
+Remember to enter the `varsToKeep` and `colClasses` arguments as character 
+vectors.
+
+ - `varsToKeep` takes a simple character vector of variable names, like this:
+
+    varsToKeep = c("creditScore", "year", "default")
+
+ - `colClasses` takes a *named* character vector, with the name of the variable
+   on the left and the class it should be on the right, in quotes. For example:
+ 
+    colClasses = c(default = "logical")
+
+ - The `colInfo` argument takes a nested list. The first list is of each variable
+   you want to specify (e.g., `year`); then each of those variables has its own list of 
+   details (e.g., `type` and `newName`).
+   It should look like this:
+
+    list(year = list(type = "factor", newName = "default_year"))
+
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Create the XDF from the last exercise so there's something to overwrite
+file.remove("mortDefaultSmall2009.xdf")
+mortDefaultCsv <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall2009.csv")
+mortDefaultXdf <- "mortDefaultSmall2009.xdf"
+rxImport(inData = mortDefaultCsv, outFile = mortDefaultXdf)
+```
+
+*** =solution
+```{r, eval=FALSE}
+# Store the file paths for the csv and xdf files as objects
+mortDefaultCsv <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall2009.csv")
+mortDefaultXdf <- "mortDefaultSmall2009.xdf"
+
+# Use the varsToKeep, colClasses, colInfo, and overwrite arguments in rxImport
+rxImport(inData = mortDefaultCsv, outFile = mortDefaultXdf,
+         varsToKeep = c("creditScore", "year", "default"),
+         colClasses = c(default = "logical"),
+         colInfo = list(year = list(type = "factor", newName = "default_year")),
+         overwrite = TRUE
+)
+
+# Look at the new default data file
+rxGetInfo(mortDefaultXdf, getVarInfo = TRUE)
+```
+
+*** =sample_code
+```{r, eval = F}
+# Store the file paths for the csv and xdf files as objects
+mortDefaultCsv <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall2009.csv")
+mortDefaultXdf <- "mortDefaultSmall2009.xdf"
+
+# Use varsToKeep, colClasses, colInfo, and overwrite arguments in rxImport
+
+rxImport(inData = mortDefaultCsv, outFile = mortDefaultXdf,
+         varsToKeep = ______________________,
+         colClasses = ______________________,
+         colInfo = ______________________,
+         overwrite = TRUE
+)
+
+# Look at the new default data file
+rxGetInfo(mortDefaultXdf, getVarInfo = TRUE)
+```
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+
+# Basic checks for the function and arguments
+test_student_typed("rxImport",
+                   not_typed_msg = "Be sure to call the 'rxImport' function!")
+
+test_student_typed("varsToKeep",
+                   not_typed_msg = "Be sure to use the 'varsToKeep' argument to select just the 'creditScore', 'year', and 'default' variables.")
+
+test_student_typed("colClasses",
+                   not_typed_msg = "Use the 'colClasses' argument to convert the 'default' variable from an integer into a logical variable.")
+
+test_student_typed("colInfo",
+                   not_typed_msg = 'Use the \'colInfo\' argument to convert the \'year\' variable into a factor. It takes a list with another list inside, like this: list(year = list(type = "factor", newName = "default_year"))')
+
+test_student_typed('rxGetInfo',
+                   not_typed_msg = "This is a complicated set of changes, so be sure to use rxGetInfo on mortDefaultXdf to check the results.")
+
+
+# Check the results
+test_expression_output(rxGetVarNames(mortDefaultXdf),
+                       incorrect_msg = "Something\'s wrong - your final dataset should have three variables: creditScore, default_year, and default. Try using 'rxGetVarInfo(mortDefaultXdf)' to see which variables are on your dataset.")
+
+test_expression_output(rxGetVarInfo(mortDefaultXdf)$default$varType,
+                       incorrect_msg = "It looks like you didn\'t convert 'default' to be a logical variable - check your 'colClasses' argument.")
+
+test_expression_output(rxGetVarInfo(mortDefaultXdf)$default_year$varType,
+                       incorrect_msg = "Be sure you're converting 'year' into a factor using the 'colInfo' argument.")
+
+test_expression_output(rxGetInfo(mortDefaultXdf),
+                       incorrect_msg = "Your 'inner_joined' data.frame doesn't seem to have the right number of rows - check your code again.")
+
+
+success_msg("Well done! This exercise only scratches the surface of the options in rxImport, so be sure to explore its documentation a little more.")
+
+```
+
+
+

@@ -1,0 +1,219 @@
+---
+title_meta  : Chapter 2
+title       : rxCube and rxCrossTabs
+description : Functions for cross-tabulation and group-wise aggregation
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Categorical Variables
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141148548
+```
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 8: Crosstabulation
+  
+Crosstabulate with rxCrossTabs and rxCube, and compare the outputs
+
+*** =instructions
+
+It's intuitive that diamonds with higher `clarity` (that is, few natural blemishes)
+would be likely to get a higher-grade `cut`. A good first step towarding 
+investigating that idea would be to crosstabulate those two factors and see if
+there's a noticeable relationship.
+
+RRE includes two functions for crosstabs: `rxCrossTabs`, which produces the
+classic frequency table, and `rxCube`, which produces a row for every unique
+combination of its input variables. They both use the same formula syntax, with
+a `:` separating the input variables:
+
+    rxCrossTabs( ~ factor1 : factor2, data = somedata)
+    rxCube( ~ factor1 : factor2, data = somedata)
+    
+ - Use **both** of these functions to crosstabulate the `cut` and `clarity` variables
+on the `diamondsXdf` dataset, and take a moment to compare the differences in
+their outputs.
+
+
+Note: "I1" are the lowest-quality diamonds in this data, and "IF" are the highest.
+
+
+*** =hint
+All the code you need is in the instructions above - just replace `factor1`,
+`factor2`, and `somedata` with the appropriate values. Be sure to run **both**
+`rxCrossTabs` and `rxCube`, so you can compare the differences.
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Use the diamonds dataset from ggplot2
+library(ggplot2)
+
+# Create a path and a data source
+diamondsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+# Select only a subsample of diamonds, to keep it fast
+set.seed(2015)
+rxImport(inData = diamonds[sample(nrow(diamonds), size = 1e4), ], outFile = diamondsXdf)
+
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+# Compare the output of rxCrossTabs
+rxCrossTabs( ~ clarity : cut, data = diamondsXdf)
+
+# ... with the output of rxCube
+rxCube( ~ clarity : cut, data = diamondsXdf)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxCrossTabs",
+                   not_typed_msg = "It doesn't appear that you made a call to rxCrossTabs - be sure to call both functions.")
+
+test_student_typed("rxCube",
+                   not_typed_msg = "It doesn't appear that you made a call to rxCube - be sure to call both functions.")
+
+test_student_typed("diamondsXdf",
+                   not_typed_msg = "Be sure to use 'diamondsXdf' as your dataset; it's already been created for you.")
+
+test_student_typed(c(" ~ clarity : cut", " ~ cut : clarity"),
+                   not_typed_msg = "Be sure to use the formula syntax, and put both clarity and cut on the right-hand side of the formula.")
+
+
+
+test_output_contains("Cross Tabulation Results for: ~",
+                     incorrect_msg = "Your rxCrossTabs results don't seem quite right - take a closer look.")
+
+test_output_contains("Cube Results for: ~",
+                     incorrect_msg = "Your rxCube results don't seem quite right - take a closer look.")
+
+
+success_msg("Good work! That's all it takes to summarize a variable.")
+
+```
+
+*** =skills
+1, 3
+
+--- type:NormalExercise xp:50
+
+## Exercise 9: Crosstabs for Three Variables
+  
+Add a third variable to your crosstabs and compare results
+
+
+*** =instructions
+
+The outputs of `rxCrossTabs` and `rxCube` are fairly similar for two variables,
+but they look quite distinct for three. 
+
+ - Add `color` to the previous crosstabs and compare the outputs.
+ - Be sure to call both `rxCrossTabs` and `rxCube`.
+
+*** =hint
+Your formula should now look something like ` ~ factor1 : factor2 : factor3`
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Use the diamonds dataset from ggplot2
+library(ggplot2)
+
+# Create a path and a data source
+diamondsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+# Select only a subsample of diamonds, to keep it fast
+set.seed(2015)
+rxImport(inData = diamonds[sample(nrow(diamonds), size = 1e4), ], outFile = diamondsXdf)
+
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+# Compare the output of rxCrossTabs
+rxCrossTabs( ~ clarity : cut : color, data = diamondsXdf)
+
+# ... with the output of rxCube
+rxCube( ~ clarity : cut : color, data = diamondsXdf)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxCrossTabs",
+                   not_typed_msg = "It doesn't appear that you made a call to rxCrossTabs - be sure to call both functions.")
+
+test_student_typed("rxCube",
+                   not_typed_msg = "It doesn't appear that you made a call to rxCube - be sure to call both functions.")
+
+test_student_typed("diamondsXdf",
+                   not_typed_msg = "Be sure to use 'diamondsXdf' as your dataset; it's already been created for you.")
+
+test_student_typed(c(" ~ clarity : cut : color", " ~ clarity : color : cut",
+                     " ~ cut : clarity : color", " ~ cut : color : clarity",
+                     " ~ color : cut : clarity", " ~ color : clarity : clarity"),
+                   not_typed_msg = "Be sure to use the formula syntax, and put both clarity and cut on the right-hand side of the formula.")
+
+
+test_output_contains("Cross Tabulation Results for: ~",
+                     incorrect_msg = "Your rxCrossTabs results don't seem quite right - take a closer look.")
+
+test_output_contains("Cube Results for: ~",
+                     incorrect_msg = "Your rxCube results don't seem quite right - take a closer look.")
+
+success_msg("Good work! That's all it takes to summarize a variable.")
+
+```
+
+*** =skills
+1, 3
+
+

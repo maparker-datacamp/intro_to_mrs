@@ -1,0 +1,494 @@
+---
+title_meta  : Chapter 3
+title       : Working with Databases
+description : Connect to databases and make in-database joins
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Working with Databases
+
+*** =video_link
+
+```{r, eval = FALSE}
+//player.vimeo.com/video/147564265
+```
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 6: Set Up a Database Connection
+
+Use `RxOdbcData` to connect to the SQLite database
+
+*** =instructions
+
+In this exercise, use the `RxOdbcData` function to connect to the `flights` table
+in the given `sqlite` database.
+
+`RxOdbcData` takes two parameters: a connection string (provided for you) and an
+SQL query to run on the databas. In this case, the query we want is:
+
+    SELECT * FROM flight
+
+This is a crucial point: `RxOdbcData` provides access to a **specific SQL query**
+in a database. Depending on the analysis, you might need several `RxOdbcData`
+connections - one for each table, query, or join you use.
+
+
+
+*** =hint
+
+ - Be sure to put quotes around your query: `"SELECT * FROM flight"`
+ - Pass the `conn_string` object to the `connectionString` argument (not the other way around)
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+```
+
+*** =solution
+```{r, eval = FALSE}
+
+# First, create the database connection string
+# The first part of the string specifies the database driver;
+# the second part points to the SQLite file.
+conn_string <- paste0("Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3")
+
+
+# Set up the connection using RxOdbcData
+flights <- RxOdbcData(sqlQuery = "SELECT * FROM flight", 
+                     connectionString = conn_string)
+
+
+# Pull a few rows to check the results
+head(flights)
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+
+# First, create the database connection string
+# The first part of the string specifies the database driver;
+# the second part points to the SQLite file.
+conn_string <- paste0("Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3")
+
+
+# Set up the connection using RxOdbcData
+flights <- RxOdbcData(
+
+
+# Pull a few rows to check the results
+head(flights)
+
+
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+test_function("RxOdbcData", 
+              args = c("sqlQuery", "connectionString"),
+              incorrect_msg = "Be sure to use both the 'sqlQuery' and 'connectionString' arguments to set up your data source.",
+              not_called_msg = "It doesn't see like you called RxOdbcData - try again.")
+
+test_expression_output(head(flights),
+                       incorrect_msg = "Your results don't look quite right - try double-checking your query.")
+
+
+test_object("flights",
+            undefined_msg = "It seems like the 'flights' object hasn't been created; check your code again.",
+            incorrect_msg = "Your 'flights' doesn't look quite right - check it again.")
+
+```
+
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 7: Join Two Tables In-Database
+
+Use `RxOdbcData` to join two tables inside the database
+
+*** =instructions
+
+Now, use `RxOdbcData` to create a query that joins two tables in the database.
+This left outer join will just add the full carrier name (`carrier.Description`)
+to the flight data:
+
+    SELECT flight.Year, flight.Month, flight.DayofMonth, flight.FlightNum, 
+           flight.UniqueCarrier, carrier.Description
+    FROM flight
+    LEFT OUTER JOIN carrier
+    ON flight.UniqueCarrier = carrier.Code
+
+Set up an `RxOdbcData` connection using this query, and check the results.
+
+
+*** =hint
+
+ - You can simply copy the above query into your answer - but be sure to put it in quotes.
+
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+```
+
+*** =solution
+```{r, eval = FALSE}
+
+# The connection string stays the same as in the previous exercise
+conn_string <- paste0("Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3")
+
+
+# Use the new query
+flights <- RxOdbcData(sqlQuery = "
+    SELECT flight.Year, flight.Month, flight.DayofMonth, flight.FlightNum, 
+           flight.UniqueCarrier, carrier.Description
+    FROM flight
+    LEFT OUTER JOIN carrier
+    ON flight.UniqueCarrier = carrier.Code",
+
+    connectionString = conn_string)
+
+
+# Pull a few rows to check the results
+head(flights)
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+
+# The connection string stays the same as in the previous exercise
+conn_string <- paste0("Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3")
+
+
+# Use the new query
+flights <- RxOdbcData(
+
+
+# Pull a few rows to check the results
+head(flights)
+
+
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+test_function("RxOdbcData", 
+              args = c("sqlQuery", "connectionString"),
+              incorrect_msg = "Be sure to use both the 'sqlQuery' and 'connectionString' arguments to set up your data source.",
+              not_called_msg = "It doesn't see like you called RxOdbcData - try again.")
+
+test_expression_output(head(flights),
+                       incorrect_msg = "Your results don't look quite right - try double-checking your query.")
+
+
+test_object("flights",
+            undefined_msg = "It seems like the 'flights' object hasn't been created; check your code again.",
+            incorrect_msg = "Your 'flights' doesn't look quite right - check it again.")
+
+```
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 8: Import from Database to XDF
+
+Use `rxImport` to pull your join into an XDF file
+
+*** =instructions
+
+Use `rxImport` to pull the previous exercise's query:
+
+    SELECT flight.Year, flight.Month, flight.DayofMonth, flight.FlightNum, 
+           flight.UniqueCarrier, carrier.Description
+    FROM flight
+    LEFT OUTER JOIN carrier
+    ON flight.UniqueCarrier = carrier.Code
+
+... into a new XDF file.
+
+
+*** =hint
+
+ - Pass the `RxOdbcData` object you create - `flights` - to the `inData` argument in `rxImport`
+ - Pass `flights_xdf` to the `outFile` argument in `rxImport`
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+```
+
+*** =solution
+```{r, eval = FALSE}
+
+# Use the previous connection string
+conn_string <- paste0("Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3")
+
+
+# Previous query
+flights <- RxOdbcData(sqlQuery = "
+    SELECT flight.Year, flight.Month, flight.DayofMonth, flight.FlightNum, 
+           flight.UniqueCarrier, carrier.Description
+    FROM flight
+    LEFT OUTER JOIN carrier
+    ON flight.UniqueCarrier = carrier.Code",
+
+    connectionString = conn_string)
+
+
+# Create a path to a new XDF file
+flights_xdf <- tempfile(fileext = ".xdf")
+
+
+# Use rxImport to pull the flights query results into the flights_xdf file
+rxImport(inData = flights,
+         outFile = flights_xdf)
+
+
+
+# Pull a few rows to check the results
+rxDataStep(flights_xdf, numRows = 10)
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+
+# Use the previous connection string
+conn_string <- paste0("Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3")
+
+
+# Previous query
+flights <- RxOdbcData(sqlQuery = "
+    SELECT flight.Year, flight.Month, flight.DayofMonth, flight.FlightNum, 
+           flight.UniqueCarrier, carrier.Description
+    FROM flight
+    LEFT OUTER JOIN carrier
+    ON flight.UniqueCarrier = carrier.Code",
+    connectionString = conn_string)
+
+
+# Create a path to a new XDF file
+flights_xdf <- tempfile(fileext = ".xdf")
+
+
+# Use rxImport to pull the flights query results into the flights_xdf file
+
+
+
+
+# Pull a few rows to check the results
+head(flights_xdf)
+
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+
+test_function("RxOdbcData", 
+              args = c("sqlQuery", "connectionString"),
+              incorrect_msg = "Be sure to use both the 'sqlQuery' and 'connectionString' arguments to set up your data source.",
+              not_called_msg = "It doesn't see like you called RxOdbcData - try again.")
+
+test_function("rxImport",
+              args = c("inData", "outFile"),
+              incorrect_msg = "Be sure to use the rxImport function to pull the query results into an XDF file.",
+              not_called_msg = "It doesn't seem like you called rxImport - you'll need to do that to create the XDF file.")
+
+test_expression_result(rxDataStep(flights_xdf),
+                       incorrect_msg = "Your results don't look quite right - try double-checking your query.")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 9: Set Factors on Import
+
+Use `rxImport` to convert the carrier details to a factor
+
+*** =instructions
+
+You might have noticed that the XDF created in the last exercise stored 
+UniqueCarrier and Description as character variables. But there are many situations
+in which they'd be more useful as factors.
+
+In this exercise, use the `RxOdbcData` argument `colClasses` to convert 
+UniqueCarrier and Description into factors upon import.
+
+Use a named vector like this one:
+
+    c(first_variable = "character", second_variable = "integer")
+
+... to specify each variable's type in `colClasses`.
+
+
+*** =hint
+
+Be sure to specify the type of each variable in `RxOdbcData`.
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+
+```
+
+*** =solution
+```{r, eval = FALSE}
+
+# Use the previous connection string
+conn_string <- paste0("Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3")
+
+
+# Here's the previous query. You'll need to fill out the colClasses argument
+# to convert the variables to factors.
+flights <- RxOdbcData(sqlQuery = "
+    SELECT flight.Year, flight.Month, flight.DayofMonth, flight.FlightNum, 
+           flight.UniqueCarrier, carrier.Description
+    FROM flight
+    LEFT OUTER JOIN carrier
+    ON flight.UniqueCarrier = carrier.Code",
+    
+    connectionString = conn_string,
+    
+    colClasses = c(Year = "integer",  Month = "integer",  DayofMonth = "integer", FlightNum = "integer",
+                   UniqueCarrier = "factor", Description = "factor")
+)
+
+
+# Create a path to a new XDF file
+flights_xdf <- tempfile(fileext = ".xdf")
+
+
+
+# Use rxImport to pull the flights query results into the flights_xdf file
+rxImport(inData = flights,
+         outFile = flights_xdf
+)
+
+
+# Check the data types
+rxGetVarInfo(flights_xdf)
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+
+# Use the previous connection string
+conn_string <- paste0("Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3")
+
+
+# Here's the previous query. You'll need to fill out the colClasses argument
+# to convert the variables to factors.
+flights <- RxOdbcData(sqlQuery = "
+    SELECT flight.Year, flight.Month, flight.DayofMonth, flight.FlightNum, 
+           flight.UniqueCarrier, carrier.Description
+    FROM flight
+    LEFT OUTER JOIN carrier
+    ON flight.UniqueCarrier = carrier.Code",
+    connectionString = conn_string,
+    colClasses = ___________
+)
+
+
+
+# Create a path to a new XDF file
+flights_xdf <- tempfile(fileext = ".xdf")
+
+# Use rxImport to pull the flights query results into the flights_xdf file
+rxImport(inData = flights, 
+         outFile = flights_xdf)
+
+
+# Check the data types
+rxGetVarInfo(flights_xdf)
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+
+test_function("RxOdbcData", 
+              args = c("sqlQuery", "connectionString", "colClasses"),
+              incorrect_msg = "Be sure to use both the 'connectionString', 'sqlQuery', and 'colClasses' arguments to set up your data source.",
+              not_called_msg = "It doesn't see like you called RxOdbcData - try again.")
+
+test_function("rxImport",
+              args = c("inData", "outFile"),
+              incorrect_msg = "Be sure to use the rxImport function to pull the query results into an XDF file.",
+              not_called_msg = "It doesn't seem like you called rxImport - you'll need to do that to create the XDF file.")
+
+
+test_expression_output(rxGetVarInfo(flights_xdf)$UniqueCarrier,
+                       incorrect_msg = 'Be sure that you specify UniqueCarrier = "factor" in the colClasses argument.')
+
+test_expression_output(rxGetVarInfo(flights_xdf)$Description,
+                       incorrect_msg = 'Be sure that you specify Description = "factor" in the colClasses argument.')
+
+test_expression_result(rxDataStep(flights_xdf),
+                       incorrect_msg = "Your results don't look quite right - try double-checking your query.")
+
+
+```
+
+
+
+
+
+
+
+
+

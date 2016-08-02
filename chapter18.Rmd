@@ -1,0 +1,202 @@
+---
+title_meta  : Chapter 4
+title       : Merging In-Database and Out-of-Database Tables
+description : Using RRE to combine data from multiple sources
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Merging In-Database and Out-of-Database Tables
+
+*** =video_link
+
+```{r, eval = FALSE}
+//player.vimeo.com/video/147564263
+```
+
+
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 9: Merge with Renamed Variables
+
+Add information about each flight's `Origin` airport to the dataset.
+
+*** =instructions
+
+You've been provided with the `flights` query from the previous exercises and a
+CSV file containing information about the airports. 
+
+ - Examine the `airports` dataset to see which variable corresponds to the `Origin`
+   variable on `flights`.
+ - Use the `newVarNames2` argument in `rxMerge` to rename that variable to 
+   `Origin`, so the variables can be matched.
+ - Merge the two datasets into a new XDF file.
+
+
+
+*** =hint
+
+ - You need to rename the variable `iata` on `airports` to `Origin`, to match that
+   variable on `flights`
+ - The `newVarNames2` syntax is a named character vector, like this: `c(iata = "Origin")`
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+options(stringsAsFactors = FALSE)
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+
+```
+
+*** =solution
+```{r, eval = FALSE}
+
+# The connection string stays the same as in the previous exercises
+conn_string <- paste0("Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3")
+
+
+# Query stays the same, too
+flights <- RxOdbcData(sqlQuery = "
+    SELECT flight.Year, flight.Month, flight.DayofMonth, 
+           flight.FlightNum, flight.Origin,
+           flight.UniqueCarrier, carrier.Description
+    FROM flight
+    LEFT OUTER JOIN carrier
+    ON flight.UniqueCarrier = carrier.Code",
+    connectionString = conn_string
+)
+
+
+# Pull the flights data into an XDF; rxMerge can't work directly with RxOdbcData objects
+flights_xdf <- tempfile(fileext = ".xdf")
+
+rxImport(inData = flights, outFile = flights_xdf)
+
+
+# Read in the CSV file with airport details
+airports <- read.csv(file.path("data", "airports.csv"))
+
+
+# Set up a new XDF for the merged data
+flights_airports <- tempfile(fileext = ".xdf")
+
+
+# Merge the two datasets and output to flights_airports
+rxMerge(inData1 = flights_xdf,
+        inData2 = airports,
+        outFile = flights_airports,
+        matchVars = "Origin",
+        newVarNames2 = c(iata = "Origin")
+)
+
+
+# Check the results
+rxDataStep(flights_airports, numRows = 10)
+
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+
+# The connection string stays the same as in the previous exercises
+conn_string <- paste0("Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3")
+
+
+# Query stays the same, too
+flights <- RxOdbcData(sqlQuery = "
+    SELECT flight.Year, flight.Month, flight.DayofMonth, 
+           flight.FlightNum, flight.Origin,
+           flight.UniqueCarrier, carrier.Description
+    FROM flight
+    LEFT OUTER JOIN carrier
+    ON flight.UniqueCarrier = carrier.Code",
+    connectionString = conn_string
+)
+
+
+# Use rxImport to pull the flights data into an XDF; rxMerge can't work 
+# directly with RxOdbcData objects
+flights_xdf <- tempfile(fileext = ".xdf")
+
+
+
+
+# Read in the CSV file with airport details
+airports <- read.csv(file.path("data", "airports.csv"))
+
+
+# Set up a new XDF for the merged data
+flights_airports <- tempfile(fileext = ".xdf")
+
+
+# Use rxMerge to join the two datasets and output to flights_airports
+
+
+
+# Check the results
+rxDataStep(flights_airports, numRows = 10)
+
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+
+test_function("RxOdbcData", 
+              args = c("sqlQuery", "connectionString", "colClasses"),
+              incorrect_msg = "Be sure to use both the 'connectionString', 'sqlQuery', and 'colClasses' arguments to set up your data source.",
+              not_called_msg = "It doesn't see like you called RxOdbcData - try again.")
+
+test_function("rxImport",
+              args = c("inData", "outFile"),
+              incorrect_msg = "Be sure to use the rxImport function to pull the query results into an XDF file.",
+              not_called_msg = "It doesn't seem like you called rxImport - you'll need to do that to create the XDF file.")
+
+test_function("rxMerge",
+              args = c("inData1", "inData2", "outFile", "matchVars"),
+              incorrect_msg = "Be sure to use the rxMerge function to merge tables together. You'll need to specify the two input datasets, where to store the output dataset, and the variables to match on.",
+              not_called_msg = "It doesn't seem like you called rxMerge - you'll need to do that to create the XDF file.")
+
+test_student_typed('newVarNames2 = c(iata = "Origin")',
+                   not_typed_msg = "Be sure to use the newVarNames2 argument in rxMerge to rename iata to 'Origin'; otherwise, you won't be able to merge the two tables together.")
+
+
+test_expression_result(rxDataStep(flights_airports),
+                       incorrect_msg = "Your results don't look quite right - try double-checking your query.")
+
+
+```
+
+
+
+
+
+--- type:VideoExercise
+
+## Conclusion
+
+*** =video_link
+
+```{r, eval = FALSE}
+//player.vimeo.com/video/147564264
+```
+
+
+
+

@@ -1,0 +1,183 @@
+---
+title_meta  : Chapter 3
+title       : Weighted Computation and Conclusion
+description : Adapting existing functions for use with weighted data
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Weighted Data
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141148549
+```
+
+--- type:NormalExercise xp:50
+
+## Exercise 10: Weighted Means, Etc.
+
+Calculate weighted descriptive statistics.
+
+
+*** =instructions
+
+ - Use `rxSummary` to calculate the average number of weeks worked in the
+`censusData` dataset.
+
+The "weeks worked" variable is named `wkswork1`; the weight variable is `perwt`.
+Be sure to put quotation marks around `perwt` when you pass it to `rxSummary`: `"perwt"`
+
+
+*** =hint
+
+ - `rxSummary` takes a formula - something like ` ~ variable`
+ - Because `perwt` is a count, it's a frequency weight - so use the `fweights` argument
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Create a pointer to the claims data
+censusData <- RxXdfData(file.path(rxGetOption("sampleDataDir"), "CensusWorkers.xdf"))
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+rxSummary( ~ wkswork1, data = censusData, fweights = "perwt")
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxSummary",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSummary.")
+
+test_student_typed("censusData",
+                   not_typed_msg = "Be sure to use 'censusData' as your dataset; it's already been created for you.")
+
+test_student_typed(" ~ wkswork1",
+                   not_typed_msg = "Be sure to use the formula syntax, with 'wkswork1' on the right-hand side of the formula.")
+
+
+test_output_contains("Summary Statistics Results for: ~wkswork1",
+                     incorrect_msg = "Your rxCube results don't seem quite right - take a closer look.")
+
+test_output_contains("Frequency weights: perwt",
+                     incorrect_msg = "Your rxCube results don't seem quite right - take a closer look.")
+
+
+success_msg("Good work! As you can see, using weighted data is straightforward.")
+```
+
+*** =skills
+1, 3
+
+--- type:NormalExercise xp:50
+
+## Exercise 11: Weighted Crosstabs
+  
+Compute a frequency table from weighted data
+
+
+*** =instructions
+
+ - Using either `rxCrossTabs` or `rxCube`, create a table of `sex` and `state`
+using `censusData`.
+
+
+*** =hint
+
+ - Both `rxCrossTabs` and `rxCube` take a formula, which should look something like: ` ~ factor1 : factor2`
+ 
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Create a pointer to the claims data
+censusData <- RxXdfData(file.path(rxGetOption("sampleDataDir"), "CensusWorkers.xdf"))
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+rxCrossTabs( ~ state : sex, data = censusData, fweights = "perwt")
+
+rxCube( ~ state : sex, data = censusData, fweights = "perwt")
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed(c("rxCrossTabs", "rxCube"),
+                   not_typed_msg = "It doesn't appear that you made a call to rxCrossTabs or rxCube.")
+
+test_student_typed("censusData",
+                   not_typed_msg = "Be sure to use 'censusData' as your dataset; it's already been created for you.")
+
+test_student_typed(c(" ~ state:sex", " ~ sex:state"),
+                   not_typed_msg = "Be sure to use the formula syntax, with state and sex on the right-hand side, separated by a colon (:).")
+
+
+
+test_output_contains("Results for: ~",
+                     incorrect_msg = "Your rxCube results don't seem quite right - take a closer look.")
+
+test_output_contains("Frequency weights: perwt",
+                     incorrect_msg = "Your rxCube results don't seem quite right - take a closer look.")
+
+success_msg("Correct!")
+```
+
+*** =skills
+1, 3
+
+
+
+
+--- type:VideoExercise
+
+## Conclusion
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141148553
+```
+

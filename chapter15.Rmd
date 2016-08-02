@@ -1,0 +1,166 @@
+---
+title_meta  : Chapter 1
+title       : Introduction to Merging
+description : Introduction to join terminology and normalized tables
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Introduction to Merging
+
+*** =video_link
+
+```{r, eval = FALSE}
+//player.vimeo.com/video/147564262
+```
+
+
+
+
+--- type:MultipleChoiceExercise contains_graph:FALSE
+
+## Exercise 1: Keys, IDs, and Matching Variables
+
+The variable (or variables) we use to match records from one table to another
+are called keys, IDs, or matching variables.
+
+ - Examine the two tables loaded into your workspace by typing their names into
+   the console: `authors` and `organizations`
+
+ - Which variables would you use to join these two tables?
+
+
+*** =instructions
+
+
+ - `affiliation` on both tables
+ - `name` on both tables
+ - `affiliation` on `authors`, and `name` on organizations`
+ - This is a natural join - no key necessary
+  
+*** =hint
+
+The matching variables don't necessarily have the same name in both tables.
+
+*** =pre_exercise_code
+
+```{r,eval=FALSE}
+
+options(stringsAsFactors = FALSE)
+
+authors <- data.frame(name = c("Ross Ihaka", "Robert Gentleman", 
+                               "Peter Dalgaard", "Kurt Hornik"),
+                     affiliation = c("University of Auckland", "23andMe", 
+                                     "University of Copenhagen", NA))
+
+organizations <- data.frame(name = c("University of Auckland", "23andMe", 
+                                     "University of Copenhagen"),
+                            location = c("New Zealand", "USA", "Denmark"))
+
+
+```
+
+
+*** =sample_code
+```{r, eval = FALSE}
+
+# Examine these two tables
+authors
+
+organizations
+
+
+```
+
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_mc(correct = 3, 
+        no_selection_msg = "Please make a selection!", 
+        feedback_msgs = c("Incorrect - affiliation isn't a variable on organizations.",
+                          "Not quite - both tables have a variable called 'name', but it doesn't mean the same thing on both tables.",
+                          "Correct!",
+                          "Incorrect - the keys needed for this join have different names, so a natural join won't work."
+))
+
+```
+
+
+
+
+
+
+
+
+--- type:MultipleChoiceExercise contains_graph:FALSE
+
+## Exercise 2: Different Types of Joins
+
+You may have noticed that one of the authors has a missing affiliation (it should 
+be "Wirtschaftsuniversitat Wien"). This has significant implications for merging
+the two tables: some types of joins will drop that author, while others will create
+a combined table with missing values.
+
+ - Examine the two tables loaded into your workspace by typing their names into
+   the console: `authors` and `organizations`
+
+ - To create a table that *keeps* the author with the missing value, which type of
+join would you use?
+
+
+*** =instructions
+
+ - An inner join
+ - A left outer join
+ - A union join
+ - A retaining join
+  
+*** =hint
+
+You can examine the tables by typing their names into the console: `authors`;
+`organizations`
+
+*** =pre_exercise_code
+
+```{r,eval=FALSE}
+
+options(stringsAsFactors = FALSE)
+
+authors <- data.frame(name = c("Ross Ihaka", "Robert Gentleman", 
+                               "Peter Dalgaard", "Kurt Hornik"),
+                     affiliation = c("University of Auckland", "23andMe", 
+                                     "University of Copenhagen", NA))
+
+organizations <- data.frame(name = c("University of Auckland", "23andMe", 
+                                     "University of Copenhagen"),
+                            location = c("New Zealand", "USA", "Denmark"))
+
+```
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_mc(correct = 2, 
+        no_selection_msg = "Please make a selection!", 
+        feedback_msgs = c("Incorrect - inner joins will drop any table that doesn't have a matching key in both tables.",
+                          "Correct! As long as authors is the 'left' table.",
+                          "Incorrect - unions stack tables on top of one another, rather than linking records between two tables.",
+                          "Incorrect - I just made retaining joins up!"
+))
+
+```
+
+
+
+
+
+
+

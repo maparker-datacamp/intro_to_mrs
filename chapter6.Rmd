@@ -1,0 +1,168 @@
+---
+title_meta  : Chapter 2
+title       : More Complex Transformations
+description : Transformations that need full-data access
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Scaling a Variable 
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/137220974
+```
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 6: Standardizing a Variable
+  
+Standardize a variable using its mean and standard deviation
+
+*** =instructions
+
+In the video, I scaled a variable so that its lowest value was set to zero
+and its highest value was one. Another common transformation is to standardize
+a variable - to center it on its mean and then scale it by its standard deviation. This kind of transformation is essential for analyses that are
+sensitive to the scale of the input variables, like principal components 
+analysis.
+
+In open-source R, you could standardize `x` like this: `(x - mean(x)) / sd(x)`.
+In Revolution R Enterprise, the idea is the same, but we have to calculate
+statistics like the mean and standard deviation outside of `rxDataStep`,
+then subsequently pass them into `rxDataStep` using the `transformObjects`
+argument.
+
+For this exercise, use the `mortDefault` dataset to create a new variable called
+`creditScoreStandardized`:
+
+ - Use `rxSummary` to calculate the mean of `creditScore`
+ - Use `rxSummary` to calculate the standard deviation of `creditScore`
+ - Pass the mean and standard deviation to `rxDataStep` with the `transformObjects` argument
+ - Calculate `creditScoreStandardized` using the `transforms` argument
+
+
+*** =hint
+To calculate the standardized credit score, use 
+    (creditScore - varMean) /
+    varSD
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Create a temporary XDF to work with
+mortDefaultOriginal <- file.path(rxGetOption("sampleDataDir"),
+                                 "mortDefaultSmall.xdf")
+
+mortDefault <- RxXdfData(tempfile(fileext = ".xdf"))
+
+rxImport(inData = mortDefaultOriginal,
+         outFile = mortDefault)
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+
+# Use rxSummary to calculate the mean
+creditScoreMean <- rxSummary( ~ creditScore, data = mortDefault)$sDataFrame$Mean
+
+# And once more to calculate the standard deviation
+creditScoreSD <- rxSummary( ~ creditScore, data = mortDefault)$sDataFrame$StdDev
+
+# Create the standardized variable
+rxDataStep(inData = mortDefault,
+           outFile = mortDefault,
+           transformObjects = list(varMean = __________,
+                                   varSD = __________),
+           transforms = list(creditScoreStandardized = __________ ), 
+           overwrite = TRUE
+)
+
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+# Use rxSummary to calculate the mean
+creditScoreMean <- rxSummary( ~ creditScore, data = mortDefault)$sDataFrame$Mean
+
+# And once more to calculate the standard deviation
+creditScoreSD <- rxSummary( ~ creditScore, data = mortDefault)$sDataFrame$StdDev
+
+rxDataStep(inData = mortDefault,
+           outFile = mortDefault,
+           transformObjects = list(varMean = creditScoreMean,
+                                   varSD = creditScoreSD),
+           transforms = list(creditScoreStandardized = (creditScore - varMean) / varSD),
+           overwrite = TRUE
+)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+test_error()
+
+test_student_typed("rxSummary",
+                   not_typed_msg = "You'll need to use rxSummary to calculate the mean and standard deviation of creditScore.")
+
+test_student_typed("rxDataStep",
+                   not_typed_msg = "Use rxDataStep to create the standardized credit score on mortDefault.")
+
+test_student_typed("transformObjects",
+                   not_typed_msg = "Remember to pass creditScoreMean and creditScoreSD to rxDataStep using the transformObjects argument.")
+
+test_student_typed("transformObjects = list",
+                   not_typed_msg = "Remember to pass creditScoreMean and creditScoreSD to transformObjects inside of a list().")
+
+test_student_typed("transforms = list(",
+                   not_typed_msg = "Use the transforms argument to create the scald credit score.")
+
+test_student_typed("varMean = creditScoreMean",
+                   not_typed_msg = "In your transformObjects list, be sure to pass creditScoreMean with the name 'varMean', like this: varMean = creditScoreMean.")
+
+test_student_typed("varSD = creditScoreSD",
+                   not_typed_msg = "In your transformObjects list, be sure to pass creditScoreSD with the name 'varSD', like this: varSD = creditScoreSD.")
+
+test_student_typed("overwrite = TRUE",
+                   not_typed_msg = "Be sure to set overwrite = TRUE so that your changes are written to the XDF.")
+
+
+
+test_that("The mortDefault XDF has been modified in some way, even if not totally correct", {
+    expect_false(identical(rxDataStep(mortDefaultOriginal), 
+                           rxDataStep(mortDefault)),
+                 failure_msg = "The mortDefault XDF hasn't been changed - be sure to set 'overwrite = TRUE'.")
+})
+
+test_that("creditScoreStandardized has been created", {
+    expect_true("creditScoreStandardized" %in% rxGetVarNames(mortDefault),
+                failure_msg = "It looks like you haven't created a variable called 'creditScoreStandardized' on the mortDefault dataset. Try rxGetVarInfo(mortDefault) to see what variables exist on the dataset.")
+})
+
+
+test_expression_output(rxDataStep(mortDefault)$creditScoreStandardized,
+                       incorrect_msg = "Your creditScoreStandardized doesn't have the expected values - check your code and try again.")
+
+
+success_msg("Well done! You've made a simple transformation.")
+
+```
+
+*** =skills
+1, 3

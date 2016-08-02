@@ -1,0 +1,468 @@
+---
+title_meta  : Chapter 1
+title       : Sorting and Deduplicating Data with Revolution R Enterprise
+description : Sort big datasets and remove duplicate records
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Introduction to Sorting and Deduplication
+
+*** =video_link
+
+```{r, eval = FALSE}
+//player.vimeo.com/video/141511132
+```
+
+
+
+
+--- type:VideoExercise
+
+## The rxSort() Function
+
+*** =video_link
+
+```{r, eval = FALSE}
+//player.vimeo.com/video/141511131
+```
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 1: Sorting Data with rxSort
+
+Use `rxSort` to sort an XDF file
+
+*** =instructions
+
+You've been provided with the path to an unsorted XDF file (`xdf_source`).
+
+ - Use `rxSort` to sort that dataset by the variable `creditScore`, and write the
+   results to a new XDF file called `xdf_sorted`.
+
+ - Use `rxDataStep` with `numRows = 10` to check the first ten rows.
+
+*** =hint
+
+When you pass a variable name to `sortByVars`, be sure to quote it: `"var_name"`
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+```
+
+*** =solution
+```{r, eval = FALSE}
+# Path to the original XDF file
+xdf_source <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+# Use rxDataStep to look at the first few rows of the original file
+rxDataStep(xdf_source, numRows = 10)
+
+# Create an output file for the sorted data
+xdf_sorted <- tempfile(fileext = ".xdf")
+
+# Use rxSort to sort the mortgage data by the variable creditScore,
+# and write the results to xdf_sorted
+rxSort(inData = xdf_source,
+       outFile = xdf_sorted,
+       sortByVars = "creditScore"
+)
+
+# Use rxDataStep once again to view the results
+rxDataStep(xdf_sorted, numRows = 10)
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+# Path to the original XDF file
+xdf_source <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+# Use rxDataStep to look at the first few rows of the original file
+rxDataStep(xdf_source, numRows = 10)
+
+# Create a path for the sorted data
+xdf_sorted <- tempfile(fileext = ".xdf")
+
+
+# Use rxSort to sort the mortgage data by the variable creditScore,
+# and write the results to xdf_sorted
+
+
+
+# Use rxDataStep once again to view the results
+
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+test_student_typed("rxSort",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSort - start there!")
+
+test_student_typed("inData = xdf_source",
+                   not_typed_msg = "Make sure you're specifying 'xdf_source' as the inData argument for rxSort.")
+
+test_student_typed("outFile = xdf_sorted",
+                   not_typed_msg = "Make sure you're specifying 'xdf_sorted' as the outFile argument for rxSort.")
+
+test_student_typed("sortByVars = 'creditScore'",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSort - start there!")
+
+test_expression_result(rxDataStep(xdf_sorted),
+                       incorrect_msg = "Your xdf_sorted file doesn't seem quite right - make sure that you're sorting by the variable 'creditScore'.")
+
+
+success_msg("Well done! It gets a little more complicated than this, but not much.")
+
+
+```
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 2: Decreasing Sorts
+
+Use `rxSort` to sort a dataset in **decreasing** order
+
+*** =instructions
+
+ - This time, use `rxSort` to sort `xdf_source` by **decreasing** `creditScore`.
+
+ - Use `rxDataStep` with `numRows = 10` to check the first ten rows.
+
+
+*** =hint
+
+Set the `decreasing` argument to `TRUE`.
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+```
+
+*** =solution
+```{r, eval = FALSE}
+# Path to the original XDF file
+xdf_source <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+# Use rxDataStep to look at the first few rows of the original file
+rxDataStep(xdf_source, numRows = 10)
+
+# Create an output file for the sorted data
+xdf_sorted <- tempfile(fileext = ".xdf")
+
+# Use rxSort to sort the mortgage data by the variable creditScore,
+# and write the results to xdf_sorted
+rxSort(inData = xdf_source,
+       outFile = xdf_sorted,
+       sortByVars = "creditScore",
+       decreasing = TRUE
+)
+
+# Use rxDataStep with numRows = 10 once again to view the results
+rxDataStep(xdf_sorted, numRows = 10)
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+# Path to the original XDF file
+xdf_source <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+# Create an output file for the sorted data
+xdf_sorted <- "mortDefaultSmall_sorted.xdf"
+
+# Use rxSort to sort the mortgage data by decreasing creditScore,
+# and write the results to xdf_sorted
+
+
+# Use rxDataStep with numRows = 10 once again to view the results
+
+
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+test_student_typed("rxSort",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSort - start there!")
+
+test_student_typed("inData = xdf_source",
+                   not_typed_msg = "Make sure you're specifying 'xdf_source' as the inData argument for rxSort.")
+
+test_student_typed("outFile = xdf_sorted",
+                   not_typed_msg = "Make sure you're specifying 'xdf_sorted' as the outFile argument for rxSort.")
+
+test_student_typed("sortByVars = 'creditScore'",
+                   not_typed_msg = "Be sure to pass the variable creditScore to the argument sortByVars, and remember that it needs to be quoted: 'creditScore'")
+
+test_student_typed("decreasing = TRUE",
+                   not_typed_msg = "Be sure to set the argument decreasing to TRUE.")
+
+test_expression_result(rxDataStep(xdf_sorted),
+                       incorrect_msg = "Your xdf_sorted file doesn't seem quite right - make sure that you've set the argument decreasing to TRUE.")
+
+
+
+success_msg("Nicely done.")
+
+```
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 3: Sorting by Multiple Variables
+
+Sort the same dataset using two variables: **decreasing** `creditScore` and 
+**increasing** `yearsEmploy`
+
+*** =instructions
+
+Sort `xdf_source`
+
+ - by **decreasing** `creditScore`, **and**
+ - by **increasing** `yearsEmploy`.
+ - Write the results to `xdf_sorted`.
+ - View the results using `rxDataStep` with `numRows = 10`.
+
+
+*** =hint
+
+ - Sort by two variables by passing a vector of both variable names to the
+   `sortByVars` argument: `c(variable1, variable2)`
+   
+ - Sort multliple variables in different directions by passing a vector to the
+   `decreasing` argument. That vector should have one
+   logical value (`TRUE` or `FALSE`) for each variable passed to `sortByVars`:
+   `c(TRUE, FALSE)`
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+```
+
+*** =solution
+```{r, eval = FALSE}
+# Path to the original XDF file
+xdf_source <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+# Create an output file for the sorted data
+xdf_sorted <- tempfile(fileext = ".xdf")
+
+# Sort in ascending order on one variable and descending order on another variable
+rxSort(inData = xdf_source,
+       outFile = xdf_sorted,
+       sortByVars = c("creditScore", "yearsEmploy"),
+       decreasing = c(TRUE, FALSE),
+       overwrite = TRUE
+)
+
+# Use rxDataStep with numRows = 10 once again to view the results
+rxDataStep(xdf_sorted, numRows = 10)
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+# Path to the original XDF file
+xdf_source <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+# Create an output file for the sorted data
+xdf_sorted <- "mortDefaultSmall_sorted.xdf"
+
+# Use rxSort to sort xdf_source by *ascending* creditScore and *descending* yearsEmploy;
+# write the results to xdf_sorted.
+
+
+# Use rxDataStep with numRows = 10 once again to view the results
+
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+test_student_typed("rxSort",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSort - start there!")
+
+test_student_typed("inData = xdf_source",
+                   not_typed_msg = "Make sure you're specifying 'xdf_source' as the inData argument for rxSort.")
+
+test_student_typed("outFile = xdf_sorted",
+                   not_typed_msg = "Make sure you're specifying 'xdf_sorted' as the outFile argument for rxSort.")
+
+test_student_typed('sortByVars = c("creditScore", "yearsEmploy")',
+                   not_typed_msg = 'Be sure to pass the variables creditScore and yearsEmploy to the argument sortByVars as a character vector: c("creditScore", "yearsEmploy")')
+
+test_student_typed('decreasing = c(TRUE, FALSE)',
+                   not_typed_msg = "The 'decreasing' argument needs two values: one TRUE for creditScore, and one FALSE for yearsEmploy. Pass them as a logical vector: c(TRUE, FALSE)")
+
+test_expression_result(rxDataStep(xdf_sorted),
+                       incorrect_msg = "Your xdf_sorted file doesn't seem quite right - make sure that you've set the argument decreasing to TRUE.")
+
+
+
+success_msg("Well done! With the sortByVars and decreasing arguments, your sort can be as complex as you need it to be.")
+
+
+```
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 4: Deduplicating a Data Set
+
+Use `rxSort` to remove duplicate records from a dataset.
+
+
+*** =instructions
+
+ - Use `rxSort` and the `removeDupKeys` argument to get all of the unique
+   combinations of the `default` and `year` variables from `xdf_source`. Write
+   the combinations to the `xdf_nodup` file.
+
+ - Use the `dupFreqVar` argument to create a variable that indicates how many
+   records existed for each combination of `default` and `year`.
+   
+ - Use `rxDataStep` to print **all** of the unique combinations to the console
+   (don't set `numRows` this time).
+
+
+
+*** =hint
+
+ - The `removeDupKeys` argument takes TRUE or FALSE.
+ 
+ - The `dupFreqVar` argument takes a single *character* value - the name of the
+   column you want to create.
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+```
+
+*** =solution
+```{r, eval = FALSE}
+# Path to the original XDF file
+xdf_source <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+# Create an output file for the deduplicated data
+xdf_nodup <- tempfile(fileext = ".xdf")
+
+
+# Get all the unique combinations of the default and year variables.
+# Set dupFreqVar to get a count of how many records existed for each combination.
+# Write the results to xdf_nodup.
+rxSort(inData = xdf_source,
+       outFile = xdf_nodup,
+       sortByVars = c("default", "year"),
+       removeDupKeys = TRUE
+)
+
+
+# Use rxDataStep to view the results
+rxDataStep(xdf_sorted)
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+# Path to the original XDF file
+xdf_source <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+# Create an output file for the deduplicated data
+xdf_nodup <- tempfile(fileext = ".xdf")
+
+
+# Get all the unique combinations of the default and year variables.
+# Set dupFreqVar to get a count of how many records existed for each combination.
+# Write the results to xdf_nodup.
+
+
+
+# Use rxDataStep to view the results
+rxDataStep(xdf_sorted)
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+test_student_typed("rxSort",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSort - start there!")
+
+test_student_typed("inData = xdf_source",
+                   not_typed_msg = "Make sure you're specifying 'xdf_source' as the inData argument for rxSort.")
+
+test_student_typed("outFile = xdf_nodup",
+                   not_typed_msg = "Make sure you're specifying 'xdf_nodup' as the outFile argument for rxSort.")
+
+test_student_typed('sortByVars = c("default", "year")',
+                   not_typed_msg = 'Be sure to pass the variables creditScore and yearsEmploy to the argument sortByVars as a character vector: c("creditScore", "yearsEmploy")')
+
+test_student_typed('removeDupKeys = TRUE',
+                   not_typed_msg = "The 'decreasing' argument needs two values: one TRUE for creditScore, and one FALSE for yearsEmploy. Pass them as a logical vector: c(TRUE, FALSE)")
+
+test_expression_result(rxDataStep(xdf_nodup),
+                       incorrect_msg = "Your xdf_nodup file doesn't seem quite right - make sure that you've set the argument decreasing to TRUE.")
+
+
+
+success_msg("That's right! As you can see, deduplication is a simple extension of sorting.")
+
+
+```
+
+
+
+
+
+--- type:VideoExercise
+
+## Other Arguments 
+
+*** =video_link
+
+```{r, eval = FALSE}
+## Data Management with RRE Sorting Deduplicating 05 Other Arguments
+//player.vimeo.com/video/
+```
+
+
+
+

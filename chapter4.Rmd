@@ -1,0 +1,341 @@
+---
+title_meta  : Chapter 3
+title       : Advanced Imports
+description : Import data from a variety of sources
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Importing from Other Sources
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141145805
+```
+
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+
+
+## Exercise 6: Import Data from Multiple Files
+
+Sometimes data is split across multiple files. You can use `rxImport` to combine
+several source files into one XDF file.
+
+*** =instructions
+
+So far, we've only worked with one year of mortgage default data, but RRE comes
+with ten years of that data. Each year has its own CSV file. In this exercise,
+you'll combine all ten into a single XDF file.
+
+The general framework has already been set up for you, so your task is to *write
+the `rxImport` that will read in each CSV and append it to the XDF*. A couple
+of hints:
+
+ - You'll need to use the `inData`, `outFile`, and `append` arguments in `rxImport`
+ - `append` has to be set to `FALSE` for the first CSV, and `TRUE` for every 
+   CSV after the first. The `file.exists` function is one way to do that (see
+   `?file.exists` for more details)
+
+
+*** =hint
+
+ - Inside of the `lapply()` function, the current CSV file path is stored as
+   `x`. Pass that to the `inData` argument.
+ - If you set `append = file.exists(mortgageXdf)`, `append` will be `FALSE` for
+   the first CSV (because `rxImport` hasn't created the XDF yet) and `TRUE` for
+   every subsequent CSV.
+
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+file.remove("mortgage2000_2009.xdf")
+```
+
+*** =solution
+```{r, eval=FALSE}
+# Create a vector of all the mortgage default CSVs
+mortgageCsvPaths <- list.files(path = rxGetOption("sampleDataDir"), 
+                               pattern = "mortDefaultSmall\\d*.csv", 
+                               full.names = TRUE)
+
+# Create a pointer to a new XDF that will combine all the CSVs
+mortgageXdf <- "mortgage2000_2009.xdf"
+
+# Use lapply to loop through the files and create one large xdf
+lapply(mortgageCsvPaths, FUN = function(x) {
+  rxImport(inData = x,
+           outFile = mortgageXdf,
+           append = file.exists(mortgageXdf))
+    }
+)
+
+
+# Use rxGetInfo to check your results.
+# There should be a total of 10,000 files (1e+05, in R's scientific notation)
+rxGetInfo(mortgageXdf)
+
+```
+
+*** =sample_code
+```{r, eval=FALSE}
+# Create a vector of all the mortgage default CSVs
+mortgageCsvPaths <- list.files(path = rxGetOption("sampleDataDir"), 
+                               pattern = "mortDefaultSmall\\d*.csv", 
+                               full.names = TRUE)
+
+# Create a pointer to a new XDF that will combine all the CSVs
+mortgageXdf <- "mortgage2000_2009.xdf"
+
+# Use lapply to loop through the files and create one large xdf
+lapply(mortgageCsvPaths, FUN = function(x) {
+
+    # Insert an rxImport function that reads in each CSV and
+    # writes to the new XDF file.
+    
+    
+})
+
+
+# Use rxGetInfo to check your results.
+# There should be a total of 10,000 files (1e+05, in R's scientific notation)
+rxGetInfo(mortgageXdf)
+
+```
+
+*** =sct
+```{r, eval=FALSE}
+
+test_error()
+
+test_student_typed("rxImport",
+                   not_typed_msg = "Be sure to call the 'rxImport' function'!")
+
+test_student_typed("inData = x",
+                   not_typed_msg = "Be sure to pass x to your inData argument. Inside of lapply, x will stand in for each of the CSV files we're importing - one after the other.")
+
+test_student_typed("outFile = mortgageXdf",
+                   not_typed_msg = "Be sure to pass mortgageXdf to your outFile argument.")
+
+test_student_typed("append = file.exists(mortgageXdf)",
+                   not_typed_msg = "We can't simply set append to TRUE or FALSE in this case. To import the first file, append has to be FALSE - there's nothing to append to. For all subsequent CSV files, append has to be TRUE. The trick to this is to use the file.exists() ")
+
+
+
+test_student_typed('rxGetInfo(mortgageXdf)',
+                   not_typed_msg = "It's always a good idea to check that your file was imported correctly, so use the function 'rxGetInfo' on your new XDF file (mortgageXdf).")
+
+
+
+test_expression_output(rxGetInfo(mortgageXdf)$numRows,
+                       incorrect_msg = "Your XDF doesn't seem to have the right number of records - check your results again.")
+
+
+success_msg("Looks good! This is a good example of combining functions from both open-source R and RRE to make your analysis simpler.")
+
+```
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+
+## Exercise 7: Import with a Data Source
+
+RRE connects to different data sources using "data source" functions, but sometimes
+you'll want to create a data source directly.
+
+*** =instructions
+
+In the previous exercises, `rxImport` has automatically created the "data source" 
+wrappers for the CSV and XDF files behind the scenes. But creating data sources
+manually can be useful for a variety of reasons:
+
+ - Greater control over how data is imported to XDF (setting delimiters, SAS 
+   import options, etc.)
+ - The ability to use RRE functions directly on source data files if XDF files
+   can't be used
+ - The option to use some Open-Source R functions directly on files (CSV, SAS,
+   XDF, etc.)
+   
+In this exercise, you'll examine the differences between three ways of calling
+a dataset:
+
+ - Working with the path to an XDF file (as we've done in exercises so far)
+ - Working with an XDF data source object created by `RxXdfData`
+ - Working with a text data source object created by `RxTextData`
+ 
+
+Here's what you need to do:
+
+ - Use `RxTextData` to create a text data source called `claimsCsvSource`.
+ - Use `rxImport` to create an XDF file.
+ - Use `rxGetInfo` on all three sources: `claimsXdf`, `claimsXdfSource`, and
+   `claimsXdfSource`, to see how they differ.
+ - Use Open-Source R's `head` function on all three sources to see what happens.
+   You can try other Open-Source R functions, too: `tail`, `nrow`, `summary`, etc.
+
+
+
+
+
+*** =hint
+
+To create a data source, just pass the appropriate file path to the data source
+creator function (`claimsCsv` to `RxTextData`, `claimsXdf` to `RxXdfData`).
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+file.remove("claims.xdf")
+```
+
+*** =solution
+```{r, eval=FALSE}
+
+# Here's the path to the source CSV
+claimsCsv <- file.path(rxGetOption("sampleDataDir"), "claims.txt")
+
+
+# 1. Use rxImport to import the CSV to claimsXdf
+# As far as R knows, claimsXdf is just a character vector
+claimsXdf <- "claims.xdf"
+
+rxImport(inData = claimsCsv, outFile = claimsXdf, overwrite = TRUE)
+
+
+# 2. Create an XDF data source with RxXdfData
+# This creates an in-memory object that will work with some R functions
+# (but it's still just a pointer to the XDF file)
+claimsXdfSource <- RxXdfData(claimsXdf)
+
+# 3. Create a text data source with RxTextData
+# This also creates an in-memory data source, but it points
+# directly to the CSV file
+claimsCsvSource <- RxTextData(claimsCsv)
+
+
+# View the imported data with rxGetInfo
+rxGetInfo(claimsXdf, getVarInfo = TRUE)
+rxGetInfo(claimsXdfSource, getVarInfo = TRUE)
+rxGetInfo(claimsCsvSource, getVarInfo = TRUE)
+
+
+# Use the Open-Source R function head() to view the first few rows.
+# You might also try tail(), nrow(), and summary().
+# Not every function will work for every source.
+head(claimsXdf)
+head(claimsXdfSource)
+head(claimsCsvSource)
+
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+
+# Here's the path to the source CSV
+claimsCsv <- file.path(rxGetOption("sampleDataDir"), "claims.txt")
+
+
+# 1. Use rxImport to import the CSV to claimsXdf
+# As far as R knows, claimsXdf is just a character vector
+claimsXdf <- "claims.xdf"
+
+
+
+
+# 2. Create an XDF data source with RxXdfData
+# This creates an in-memory object that will work with some R functions
+# (but it's still just a pointer to the XDF file)
+
+
+# 3. Create a text data source with RxTextData
+# This also creates an in-memory data source, but it points
+# directly to the CSV file
+
+
+
+# View the imported data with rxGetInfo
+rxGetInfo(claimsXdf, getVarInfo = TRUE)
+rxGetInfo(claimsXdfSource, getVarInfo = TRUE)
+rxGetInfo(claimsCsvSource, getVarInfo = TRUE)
+
+
+# Use the Open-Source R function head() to view the first few rows.
+# You might also try tail(), nrow(), and summary().
+# Not every function will work for every source.
+head(claimsXdf)
+head(claimsXdfSource)
+head(claimsCsvSource)
+
+```
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxImport",
+                   not_typed_msg = "Be sure to call the 'rxImport' function!")
+
+test_student_typed("RxXdfData",
+                   not_typed_msg = "Be sure to call the 'RxXdfData' function to create your XDF data source.")
+
+test_student_typed("RxTextData",
+                   not_typed_msg = "Be sure to call the 'RxTextData' function to create your CSV data source.")
+
+
+
+
+
+
+test_expression_output(rxGetInfo(claimsXdf),
+                       incorrect_msg = "It seems like your XDF file wasn't created correctly - try examining it with the rxGetInfo function.")
+
+test_expression_output(rxGetInfo(claimsXdfSource),
+                       incorrect_msg = "It seems like your XDF data source wasn't created correctly - try examining it with the rxGetInfo function.")
+
+test_expression_output(rxGetInfo(claimsCsvSource),
+                       incorrect_msg = "It seems like your CSV data source wasn't created correctly - try examining it with the rxGetInfo function.")
+
+
+
+success_msg("Looks good! This is a good example of combining functions from both open-source R and RRE to make your analysis simpler.")
+
+```
+
+
+
+
+--- type:VideoExercise
+
+## Conclusion
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141145806
+```
+
+
+

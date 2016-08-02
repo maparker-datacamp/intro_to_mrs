@@ -1,0 +1,661 @@
+---
+title_meta  : Chapter 1
+title       : Transformations in RRE
+description : Introduction to transforming variables and subsetting XDF files.
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Introduction to Transformations
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/137220973
+```
+
+--- type:VideoExercise
+
+## Your First Transformation
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/137220976
+```
+
+--- type:NormalExercise xp:50
+
+## Exercise 1: Transforming a Single Variable
+  
+Convert engine displacement from cubic inches to liters
+
+
+*** =instructions
+
+Let's get the hang of the basic transform syntax. In this exercise, you'll
+work with a dataset of automobile specifications, including miles per gallon,
+number of cylinders, transmission type, and so on.
+
+It's an old dataset, however. For example, the engine displacement
+(a measure of engine size) is measured in cubic inches. Nowadays, many people
+would prefer liters. In base R, that conversion would be:
+
+`disp * 0.016`
+
+Using `rxDataStep`, create a new variable on the XDF dataset `mtcarsXdf`
+called `disp_liters` that converts `disp` from cubic inches to liters.
+
+*** =hint
+The basic structure you need is:    
+
+     rxDataStep(
+         inData = mtcarsXdf,
+         outFile = mtcarsXdf,
+         transforms =
+             list(______ = _______),
+         overwrite = TRUE
+     )
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Convert mtcars to XDF
+mtcarsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+rxImport(inData = cbind(model = rownames(mtcars), mtcars), 
+         outFile = mtcarsXdf)
+
+# Create a second copy to see if the file is modified at all
+mtcarsXdfOriginal <- RxXdfData(tempfile(fileext = ".xdf"))
+
+rxImport(inData = cbind(model = rownames(mtcars), mtcars),
+         outFile = mtcarsXdfOriginal)
+
+```
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Examine the variables on the dataset
+rxGetVarInfo(mtcarsXdf)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+rxDataStep(inData = mtcarsXdf,
+           outFile = mtcarsXdf,
+           transforms = list(disp_liters = disp * 0.016),
+           overwrite = TRUE
+)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxDataStep", 
+                             not_typed_msg = "You'll have to use the function rxDataStep to make this transformation - start there.")
+
+test_student_typed("mtcarsXdf",
+                   not_typed_msg = "Make sure you're reading the data from mtcarsXdf, and writing the modified data back to mtcarsXdf.")
+
+test_student_typed("transforms",
+                   not_typed_msg = "Make sure to use the 'transforms' argument in rxDataStep.")
+
+test_student_typed("transforms = list(",
+                   not_typed_msg = "Remember: the transforms argument takes a list formatted like: 'list(name_of_new_var = old_var * 20)'.")
+
+test_student_typed("overwrite = TRUE",
+                   not_typed_msg = "Be sure to set the argument overwrite to TRUE - otherwise, your transformation won't be written to the XDF file.")
+
+
+test_that("mtcarsXdf has been modified in some way, even if not totally correct", {
+    expect_false(identical(rxDataStep(mtcarsXdf), 
+                           rxDataStep(mtcarsXdfOriginal)),
+                 failure_msg = "The mtcarsXdf dataset hasn't been changed - be sure to set 'overwrite = TRUE'.")
+})
+
+test_that("disp_liters has been created", {
+    expect_true("disp_liters" %in% names(mtcarsXdf),
+                failure_msg = "It looks like you haven't created a variable called 'disp_liters' on the mtcarsXdf dataset. Try rxGetVarInfo(mtcarsXdf) to see what variables do exist on the dataset.")
+})
+
+
+test_that("disp_liters = disp * 0.016", {
+    expect_equivalent(object = rxDataStep(mtcarsXdf)$disp_liters,
+                      expected = mtcars$disp * 0.016,
+                      failure_msg = "Your conversion of cubic inches to liters doesn't seem right - take another look, and be sure you're using 0.016 as your conversion ratio."
+    )
+})
+
+success_msg("Well done! You've made a simple transformation.")
+
+```
+
+*** =skills
+1, 3
+
+--- type:NormalExercise xp:50
+
+##  Exercise 2: Transforming a Single Variable
+  
+Convert car weight from thousands of pounds to thousands of kilograms
+
+
+*** =instructions
+
+Let's convert another variable to metric. The weight of the cars in `mtcarsXdf`
+is recorded in thousands of pounds - for example, the Datsun 710 has a `wt`
+value of 3.85 (meaning it weights 3,850 pounds). That's about 1.75 thousand
+kilograms. In open-source R, that conversion would look like this:
+
+`wt * 0.454`
+
+Use `rxDataStep` to create a new variable on the XDF dataset `mtcarsXdf`
+called `wt_kg` that converts `wt` from thousands-of-pounds to
+thousands-of-kilograms.
+
+*** =hint
+
+The basic structure you need is:    
+
+     rxDataStep(inData = mtcarsXdf,
+         outFile = mtcarsXdf,
+         transforms = 
+             list(______ = _______),
+         overwrite = TRUE
+     )
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Convert mtcars to XDF
+mtcarsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+rxImport(inData = cbind(model = rownames(mtcars), mtcars), 
+         outFile = mtcarsXdf)
+
+# Create a second copy to see if the file is modified at all
+mtcarsXdfOriginal <- RxXdfData(tempfile(fileext = ".xdf"))
+
+rxImport(inData = cbind(model = rownames(mtcars), mtcars), 
+         outFile = mtcarsXdfOriginal)
+
+```
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Examine the variables on the dataset
+rxGetVarInfo(mtcarsXdf)
+```
+
+
+*** =solution
+
+```{r,eval=FALSE}
+
+rxDataStep(inData = mtcarsXdf,
+           outFile = mtcarsXdf,
+           transforms = list(wt_kg = wt * 0.454),
+           overwrite = TRUE
+)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+test_error()
+
+test_student_typed("rxDataStep", 
+                             not_typed_msg = "You'll have to use the function rxDataStep to make this transformation - start there.")
+
+test_student_typed("mtcarsXdf",
+                   not_typed_msg = "Make sure you're reading the data from mtcarsXdf, and writing the modified data back to mtcarsXdf.")
+
+test_student_typed("transforms",
+                   not_typed_msg = "Make sure to use the 'transforms' argument in rxDataStep.")
+
+test_student_typed("transforms = list(",
+                   not_typed_msg = "Remember: the transforms argument takes a list formatted like: 'list(name_of_new_var = old_var * 20)'.")
+
+test_student_typed("overwrite = TRUE",
+                   not_typed_msg = "Be sure to set the argument overwrite to TRUE - otherwise, your transformation won't be written to the XDF file.")
+
+
+test_that("mtcarsXdf has been modified in some way, even if not totally correct", {
+    expect_false(identical(rxDataStep(mtcarsXdf), rxDataStep(mtcarsXdfOriginal)),
+                 failure_msg = "The mtcarsXdf dataset hasn't been changed - be sure to set 'overwrite = TRUE'.")
+})
+
+test_that("wt_kg = wt * 0.454", {
+    expect_equivalent(object = rxDataStep(mtcarsXdf)$wt_kg,
+                      expected = mtcars$wt * 0.454,
+    failure_msg = "Your conversion of pounds to kilograms doesn't seem right - take another look, and be sure you're using 0.454 as your conversion ratio."
+    )
+})
+
+success_msg("Well done! Hopefully these simple transformations are starting to feel a bit more natural.")
+
+```
+
+*** =skills
+1, 3
+
+
+--- type:VideoExercise
+
+## Multiple Transformations 
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/137220971
+```
+
+--- type:NormalExercise xp:50
+
+## Exercise 3: Multiple Transformations
+  
+Convert several variables to metric
+
+
+*** =instructions
+
+Most of the time, if you're converting one variable to metric, you'll want to
+convert several. In this exercise, convert:
+
+ - `mpg` from miles per gallon to liters per 100 kilometers,
+ - `disp` from cubic inches to liters, and
+ - `wt` from thousands of pounds to thousands of kilograms. In base R, that would
+entail these three expressions:
+
+ - `lp100km = 235.215 / mpg`
+ - `disp_liters = disp * 0.016`
+ - `wt_kg = wt * 0.454`
+ 
+ The RRE syntax is nearly the same as a single transformation; just separate
+ each variable with a comma inside the transforms `list`.
+ 
+ Add these new variables to the existing `mtcarsXdf` file.
+
+
+*** =hint
+All your transformations should be in one list, like this: 
+
+    list(lp100km = 235.215 / ____,
+         disp_liters = _____ * 0.016, 
+         wt_kg = _____ * 0.454)
+
+... which you pass to `rxDataStep`'s `transforms` argument.
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Convert mtcars to XDF
+mtcarsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+rxImport(inData = cbind(model = rownames(mtcars), mtcars),
+         outFile = mtcarsXdf)
+
+# Create a second copy to see if the file is modified at all
+mtcarsXdfOriginal <- RxXdfData(tempfile(fileext = ".xdf"))
+
+rxImport(inData = cbind(model = rownames(mtcars), mtcars),
+         outFile = mtcarsXdfOriginal)
+
+```
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Examine the variables on the dataset
+rxGetVarInfo(mtcarsXdf)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+rxDataStep(inData = mtcarsXdf,
+           outFile = mtcarsXdf,
+           transforms = list(lp100km = 235.215 / mpg,
+                             disp_liters = disp * 0.016,
+                             wt_kg = wt * 0.454
+           ),
+           overwrite = TRUE
+)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+test_error()
+
+test_student_typed("rxDataStep", 
+                             not_typed_msg = "You'll have to use the function rxDataStep to make this transformation - start there.")
+
+test_student_typed("mtcarsXdf",
+                   not_typed_msg = "Make sure you're reading the data from mtcarsXdf, and writing the modified data back to mtcarsXdf.")
+
+test_student_typed("transforms",
+                   not_typed_msg = "Make sure to use the 'transforms' argument in rxDataStep.")
+
+test_student_typed("transforms = list(",
+                   not_typed_msg = "Remember: the transforms argument takes a list formatted like: 'list(name_of_new_var = old_var * 20)'.")
+
+test_student_typed("overwrite = TRUE",
+                   not_typed_msg = "Be sure to set the argument overwrite to TRUE - otherwise, your transformation won't be written to the XDF file.")
+
+
+test_that("mtcarsXdf has been modified in some way, even if not totally correct", {
+    expect_false(identical(rxDataStep(mtcarsXdf), rxDataStep(mtcarsXdfOriginal)),
+                 failure_msg = "The mtcarsXdf dataset hasn't been changed - be sure to set 'overwrite = TRUE'.")
+})
+
+test_that("lp100km = 235.215 / mpg", {
+    expect_equivalent(object = rxDataStep(mtcarsXdf)$lp100km,
+                      expected = 235.215 / mtcars$mpg,
+                      failure_msg = "Your conversion of miles-per-gallon to liters/100km doesn't seem right - take another look."
+    )
+})
+
+test_that("disp_liters = disp * 0.016", {
+    expect_equivalent(object = rxDataStep(mtcarsXdf)$disp_liters, 
+                      expected = mtcars$disp * 0.016,
+                      failure_msg = "Your conversion of disp from cubic inches to liters doesn't seem right - take another look."
+    )
+})
+
+test_that("wt_kg = wt * 0.454", {
+    expect_equivalent(object = rxDataStep(mtcarsXdf)$wt_kg,
+                      expected = mtcars$wt * 0.454,
+                      failure_msg = "Your pounds-to-kilograms conversion doesn't seem right - take another look."
+    )
+})
+  
+success_msg("Well done! You've got the hang of multiple transformations.")
+```
+
+*** =skills
+1, 3
+
+
+
+--- type:VideoExercise
+
+## Dropping Variables 
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/137220977
+```
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 4: Dropping Variables
+  
+Drop the variables that use imperial measures
+
+
+*** =instructions
+
+Now that you've got the metric variables, create a new XDF file called
+`mtcarsMetric` and drop the three imperial variables we've replaced
+(`mpg`, `wt`, and `disp`).
+In `rxDataStep`, you can use the argument `varsToDrop` to name 
+specific variables to be dropped from the dataset, or use the argument
+`varsToKeep` to drop all the variables you *don't* name.
+
+*** =hint
+
+You need to pass a vector of the variable names you want to drop to the
+argument `varsToDrop` - it'll look something like this:
+
+    varsToDrop = c("var1", "var2")
+
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Convert mtcars to XDF
+mtcarsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+rxImport(inData = cbind(model = rownames(mtcars), mtcars),
+         outFile = mtcarsXdf)
+
+# Create a second copy to see if the file is modified at all
+mtcarsXdfOriginal <- RxXdfData(tempfile(fileext = ".xdf"))
+rxImport(inData = cbind(model = rownames(mtcars), mtcars), 
+         outFile = mtcarsXdfOriginal)
+
+
+# Convert to metric
+rxDataStep(inData = mtcarsXdf,
+           outFile = mtcarsXdf,
+           transforms = list(lp100km = 235.215 / mpg,
+                             disp_liters = disp * 0.016,
+                             wt_kg = wt * 0.454
+           ),
+           overwrite = TRUE
+)
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Create a new XDF for the subset. The tempfile() function is a good way to do this.
+mtcarsMetric <- tempfile(fileext = ".xdf")
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+# Create a new XDF for the subset. The tempfile() function is a good way to do this.
+mtcarsMetric <- tempfile(fileext = ".xdf")
+
+rxDataStep(inData = mtcarsXdf,
+           outFile = mtcarsMetric,
+           varsToDrop = c("mpg", "wt", "disp")
+)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+
+test_error()
+
+
+test_student_typed("rxDataStep", 
+                   not_typed_msg = "You'll have to use the function rxDataStep to drop the variables - start there.")
+
+test_student_typed("mtcarsXdf",
+                   not_typed_msg = "Make sure you're reading the data from mtcarsXdf.")
+
+test_student_typed("mtcarsMetric",
+                   not_typed_msg = "Make sure you're writing the subset of variables to mtcarsMetric.")
+
+
+test_student_typed("varsToDrop",
+                   not_typed_msg = "Make sure to use the 'varsToDrop' argument in rxDataStep.")
+
+
+test_that("The imperial variables have been removed.", {
+    expect_false(any(c("mpg", "wt", "disp") %in% rxGetVarNames(mtcarsMetric)),
+                 failure_msg = "At least one of mpg, wt, and disp is still on mtcarsMetric. Check your code and try again."
+        )
+})
+
+test_that("The metric variables haven't been removed.", {
+    expect_true(all(c("lp100km", "wt_kg", "disp_liters") %in% rxGetVarNames(mtcarsMetric)),
+                failure_msg = "It looks like you dropped one of the metric variables (lp100km, wt_kg, disp_liters) by accident! Check your code and try again."
+        )
+})
+
+  
+success_msg("Success! You can drop unnecessary variables. The argument varsToKeep works in basically the same way, except it retains the named variables. Use whichever is most convenient.")
+```
+
+*** =skills
+1, 3
+
+
+
+
+--- type:VideoExercise
+
+## Subsetting
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/137220972
+```
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 5: Subsetting Rows
+  
+Subset to efficient cars with four gears
+
+
+*** =instructions
+
+Now imagine that a customer is looking for a relatively efficient car with four gears.
+Subset `mtcarsXdf` to include just cars with four gears and that can go 100km
+on less than 10 liters of gas (remember, this dataset is from 1974). In open-source
+R, you might use the `subset` function:
+
+    subset(mtcars, 
+           gear == 4 & lp100km < 10)
+
+In Revolution R Enterprise, you can use `rxDataStep` to subset an XDF file.
+Use `rxDataStep`'s argument `rowSelection` to select the five cars in `mtcarsXdf`
+that meet these criteria.
+
+*** =hint
+
+Remember to use the `&` operator to link the two comparisons - `gear == 4` and
+`lp100km < 10` - into one expression.
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Convert mtcars to XDF
+mtcarsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+rxImport(inData = cbind(model = rownames(mtcars), mtcars), 
+         outFile = mtcarsXdf)
+
+# Create a second copy to see if the file is modified at all
+mtcarsXdfOriginal <- RxXdfData(tempfile(fileext = ".xdf"))
+rxImport(inData = cbind(model = rownames(mtcars), mtcars),
+         outFile = mtcarsXdfOriginal)
+
+
+# Convert to metric
+rxDataStep(inData = mtcarsXdf,
+           outFile = mtcarsXdf,
+           transforms = list(lp100km = 235.215 / mpg,
+                             disp_liters = disp * 0.016,
+                             wt_kg = wt * 0.454
+           ),
+           overwrite = TRUE
+)
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Examine the variables on the dataset
+rxGetVarInfo(mtcarsXdf)
+```
+
+
+*** =solution
+
+```{r,eval=FALSE}
+
+rxDataStep(inData = mtcarsXdf,
+           outFile = mtcarsXdf,
+           rowSelection = gear == 4 & lp100km < 10,
+           overwrite = TRUE
+)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxDataStep", 
+                             not_typed_msg = "You'll have to use the function rxDataStep to make this transformation - start there.")
+
+test_student_typed("mtcarsXdf",
+                   not_typed_msg = "Make sure you're reading the data from mtcarsXdf, and writing the modified data back to mtcarsXdf.")
+
+test_student_typed("rowSelection",
+                   not_typed_msg = "Make sure to use the 'rowSelection' argument in rxDataStep.")
+
+
+test_student_typed("overwrite = TRUE",
+                   not_typed_msg = "Be sure to set the argument overwrite to TRUE - otherwise, your transformation won't be written to the XDF file.")
+
+
+test_expression_output(rxGetInfo(mtcarsXdf)$numRows < 32,
+                       incorrect_msg = "mtcarsXdf still has all 32 records - are you sure you set overwrite = TRUE?")
+
+
+test_expression_output(rxDataStep(mtcarsXdf)$lp100km < 10,
+                incorrect_msg = "Some of the cars in your subset have lp100km values greater than 10 - check your code and try again.")
+
+test_expression_output(rxDataStep(mtcarsXdf)$gear == 4,
+                incorrect_msg = "Some of the cars in your subset have three or five gears - check your code and try again.")
+
+
+  
+success_msg("Well done! You've successfully transformed variables, dropped variables, and subset variables. On to the next lesson!")
+
+```
+
+*** =skills
+1, 3
+
+

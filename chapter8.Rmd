@@ -1,0 +1,749 @@
+---
+title_meta  : Chapter 1
+title       : Advanced Transforms and the transformFunc Argument
+description : We introduce advanced transforms that use functions rather than simple expressions to manipulate and generate variables in a dataset
+attachments :
+slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Introduction to Advanced Transformations
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141147218
+```
+
+
+
+
+
+
+--- type:VideoExercise
+
+## Scaling Multiple Variables
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141147216
+```
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 1: Scale Multiple Variables with transforms
+
+In this exercise, you'll manually scale five variables from the Dow Jones 
+Industrial Average dataset using the `transforms` argument in `rxDataStep`.
+In the next exercise, you'll learn how to write a function to automate this 
+
+Scaling is is the process of mapping values from their natural range (for
+example, 50 to 150) to another range (in this exercise, 0 to 1).
+
+*** =instructions
+
+The Dow Jones dataset has been loaded for you; use the `djia_2008` object to
+access it. Start by using `rxDataStep` to take a look at the dataset.
+
+Write your scaled results to a new XDF file called `djia_scaled`; the code for
+creating a temporary file has been provided for you.
+
+Next, use `rxGetVarInfo` to get information about the global minimum and maximum 
+values for the variables from the dataset, and store the results as an object
+called `DJinfo`.
+
+Now, use `rxDataStep` to scale the price columns - `Open`, `High`, `Low`, 
+`Close` - as well as `Volume`:
+
+ - Using the `transformObjects` argument, assign the `DJinfo` to the `var_info` 
+   variable for use in the transforms expressions below.  
+ - Using the `transforms` argument, write the R code to scale each variable.
+   `Open` has already been scaled for you.
+
+
+Finally, check your new scaled variables by using `rxDataStep` to examine
+the first few rows of the modified data.
+
+
+*** =hint
+
+All the code you need has been provided, so review it carefully. If you need to,
+you can reset the code to its original state by clicking the circling arrow
+next to the green "Submit Answer" button.
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+djia_source <- RxXdfData( file.path(rxGetOption("sampleDataDir"), "DJIAdaily.xdf") )
+djia_2008 <- RxXdfData( tempfile(fileext=".xdf") )
+
+rxDataStep(djia_source, djia_2008, 
+            varsToKeep=c("Date", "Open", "High", "Low", "Close", "Volume"),
+            transforms = list(Date = as.Date(Date)),
+            rowSelection = (Date >= as.Date("2008-01-01")) & 
+                           (Date <= as.Date("2008-12-31")),
+            overwrite = TRUE)
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+
+# Check out the first few lines of the data
+rxDataStep(djia_2008, numRows = 5)
+
+# Create a location to hold the scaled dataset
+djia_scaled <- tempfile(fileext = ".xdf")
+
+# Use rxGetVarInfo to calculate the minimums and maximums of the 
+# variables in djia_2008
+DJinfo <- _______
+
+# Use rxDataStep to scale each variable individually
+rxDataStep(
+  inData = djia_2008,
+  outFile = djia_scaled,
+  transformObjects = list(_____ = _____),
+  transforms = list(
+    OpenScaled   = (Open - var_info$Open$low) / (var_info$Open$high - var_info$Open$low),
+    HighScaled   = _____,
+    LowScaled    = _____,
+    CloseScaled  = _____,
+    VolumeScaled = _____
+  ),
+  overwrite = TRUE
+)
+
+# Check your new variables
+rxDataStep(djia_scaled, numRows = 5)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+# Use rxDataStep to see the first few lies of input data
+rxDataStep(djia_2008, numRows = 5)
+
+# Create a location to hold the scaled dataset
+djia_scaled <- tempfile(fileext = ".xdf")
+
+# Use rxGetVarInfo to calculate the minimums and maximums of the 
+# variables in djia_2008
+DJinfo <- rxGetVarInfo(djia_2008)
+
+# Use rxDataStep to scale each variable individually
+rxDataStep(
+    inData = djia_2008,
+    outFile = djia_scaled,
+    
+    # Pass the variable summary info using transformObjects
+    transformObjects = list(var_info = DJinfo),
+    
+    # Use transforms to create the new variables
+    transforms = list(
+        OpenScaled   = (Open - var_info$Open$low) / (var_info$Open$high - var_info$Open$low),
+        HighScaled   = (High - var_info$High$low) / (var_info$High$high - var_info$High$low),
+        LowScaled    = (Low  - var_info$Low$low) / (var_info$Low$high - var_info$Low$low),
+        CloseScaled  = (Close - var_info$Close$low) / (var_info$Close$high - var_info$Close$low),
+        VolumeScaled = (Volume - var_info$Volume$low) / (var_info$Volume$high - var_info$Volume$low)
+  )
+)
+
+# Check your new variables
+rxDataStep(djia_scaled, numRows = 5)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+
+test_error()
+
+test_student_typed("rxDataStep",
+                   not_typed_msg = "It doesn't appear that you made a call to rxDataStep - start there!")
+
+test_student_typed("djia_2008",
+                   not_typed_msg = "Be sure to use 'djia_2008' as your dataset; it's already been created for you.")
+
+test_student_typed("djia_scaled",
+                   not_typed_msg = "Be sure to pass 'djia_scaled' to the outFile argument to store your results.")
+
+test_student_typed("transformObjects = list(var_info = DJinfo",
+                   not_typed_msg = "Be sure to use transformObjects to pass DJinfo - which contains the high and low values - to rxDataStep.")
+
+
+# Make sure all of the scaled variables were created
+scaled_vars_created <- c("OpenScaled", "HighScaled", "LowScaled", "CloseScaled",
+                         "VolumeScaled") %in% rxGetVarNames(djia_scaled)
+
+scaled_vars_not_created <- rxGetVarNames(djia_scaled)[!scaled_vars_created]
+
+test_what(
+    expect_true(all(scaled_vars_created)),
+    feedback_msg = paste("Be sure to create a scaled version of each of the variables. It looks like you're missing:",
+                         paste(scaled_vars_not_created, collapse = ", "))
+)
+
+
+
+# Check the values are correctly scaled
+solution_df <- rxDataStep(
+    inData = djia_2008,
+    
+    transformObjects = list(var_info = DJinfo),
+    
+    transforms = list(
+        OpenScaled   = (Open - var_info$Open$low) / (var_info$Open$high - var_info$Open$low),
+        HighScaled   = (High - var_info$High$low) / (var_info$High$high - var_info$High$low),
+        LowScaled    = (Low  - var_info$Low$low) / (var_info$Low$high - var_info$Low$low),
+        CloseScaled  = (Close - var_info$Close$low) / (var_info$Close$high - var_info$Close$low),
+        VolumeScaled = (Volume - var_info$Volume$low) / (var_info$Volume$high - var_info$Volume$low)
+        
+  )
+)
+
+    
+test_what(
+    expect_equivalent(object = rxDataStep(djia_scaled),
+                      expected = solution_df),
+    feedback_msg = "You've created all of the scaled variables, but their values don't look right - take a closer look at your code, or reset to the sample code if you need to."
+)
+
+
+
+
+success_msg("Good work. There are more efficient ways to transform many variables at the same time, but this is the essential approach.")
+
+
+```
+
+*** =skills
+1, 3
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 2: Scale Multiple Variables with transformFunc
+
+As you've seen, the `transforms` argument makes it easy to do simple 
+row-by-row transformations, where the computed value of the new variable only 
+depends on values in that same row. But there can be a lot of repetition 
+involved in applying similar operations to multiple variables. In this exercise,
+you'll use a more sophisticated approach: transform functions.  
+
+Generalize the process of scaling a variable by writing a function. Instead of 
+using the `transforms` argument to build new or modified variables from 
+expressions, use `transformFunc` to pass a function. The parameters 
+`transformVars` and `transformObjects` make variables from the dataset and 
+other objects (respectively) available withn the transform function.
+
+
+*** =instructions
+
+First, review the `scalesVars` function. It's already laid out for you, but
+you'll need to fill in the blanks to make it operational.
+
+Next, use `rxGetVarInfo` to get the minimum and maximum values for all of the
+variables in `djia_2008`.
+
+Finally, use `rxDataStep` to apply the `scaleVars` function to all of the 
+columns in `djia_2008`:
+
+ - Use the `scaleVars` function as the `transformFunc`.
+ - Give `transformVars` a character vector specifying which variables will 
+   appear in the `dataList`. 
+ - Pass `DJinfo` to the `transformObjects` argument to make it available as
+   `var_info` inside of the `scaleVars` function.
+
+Finally, examine the results by using `rxDataStep` with `numRows = 5`. You 
+see the five new scaled variables in addition to the originals.
+
+
+*** =hint
+
+ - In the `scaleVars` function, the object `var_name` stands in for the variables
+named in `transformVars`
+
+ - To scale the variables, use the expression
+`(var_name - low_value) / (high_value - low_value`.
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+djia_source <- RxXdfData( file.path(rxGetOption("sampleDataDir"), "DJIAdaily.xdf") )
+djia_2008 <- RxXdfData( tempfile(fileext=".xdf") )
+
+rxDataStep(djia_source, djia_2008, 
+            varsToKeep=c("Date", "Open", "High", "Low", "Close", "Volume"),
+            transforms = list(Date = as.Date(Date)),
+            rowSelection = (Date >= as.Date("2008-01-01")) & (Date <= as.Date("2008-12-31")),
+            overwrite = TRUE)
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Write a function to scale individual variables
+scaleVars <- function(dataList) {
+    
+  # Loop over the names of the variables in dataList
+  for(var_name in names(dataList)) {
+      
+    # Create the new variable name by pasting "Scaled" onto the original
+  	dataList[[paste0(_____, "Scaled")]] <-
+  	    
+  	    # Subtract the minimum value from all the values...
+  	    (dataList[[_____]] - var_info[[_____]]$low) / 
+  	    
+  	    # ... then divide by the difference between the min and max values
+	        (var_info[[_____]]$high - var_info[[_____]]$low)
+  }
+    
+  # Return dataList with its new variables
+  return(dataList)
+
+}
+
+# Use rxGetVarInfo to calculate the minimums and maximums of the 
+# variables in djia_2008
+DJinfo <- _____
+
+# Create a location to hold the scaled dataset
+djia_scaled <- tempfile(fileext = ".xdf")
+
+# Use rxDataStep to apply the scaleVars function 
+# to "Open", "High", "Low", "Close", and "Volume"
+rxDataStep(inData = djia_2008, 
+           outFile = djia_scaled, 
+           
+           # transformFunc identifies a function you'd like to apply
+           transformFunc = _____, 
+           
+           # transformVars names the variables you want to apply the function to
+           # (that is, the variables that will be in dataList)
+           transformVars = _____, 
+           
+           # transformObjects passes any other necessary objects to transformFunc
+           transformObjects = list(var_info = ___)
+
+)
+
+# Examine the results
+rxDataStep(djia_scaled, numRows = 5)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+# Write a function to scale individual variables
+scaleVars <- function(dataList) {
+    
+  # Loop over the names of the variables in dataList
+  for(var_name in names(dataList)) {
+      
+    # Create the new variable name by pasting "Scaled" onto the original
+  	dataList[[paste0(var_name, "Scaled")]] <-
+  	    
+  	    # Subtract the minimum value from all the values...
+  	    (dataList[[var_name]] - var_info[[var_name]]$low) / 
+  	    
+  	    # ... then divide by the difference between the min and max values
+	        (var_info[[var_name]]$high - var_info[[var_name]]$low)
+  }
+    
+  # Return dataList with its new variables
+  return(dataList)
+
+}
+
+# Use rxGetVarInfo to calculate the minimums and maximums of the 
+# variables in djia_2008
+DJinfo <- rxGetVarInfo(djia_2008)
+
+# Create a location to hold the scaled dataset
+djia_scaled <- tempfile(fileext = ".xdf")
+
+# Use rxDataStep to apply the scaleVars function 
+# to "Open", "High", "Low", "Close", and "Volume"
+rxDataStep(inData = djia_2008, 
+           outFile = djia_scaled, 
+           
+           # transformFunc identifies a function you'd like to apply
+           transformFunc = scaleVars, 
+           
+           # transformVars names the variables you want to apply the function to
+           # (that is, the variables that will be in dataList)
+           transformVars = c("Open", "High", "Low", "Close", "Volume"), 
+           
+           # transformObjects passes any other necessary objects to transformFunc
+           transformObjects = list(var_info = DJinfo)
+
+)
+
+# Examine the results
+rxDataStep(djia_scaled, numRows = 5)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+
+# Check that the student typed...
+test_student_typed("DJinfo <- rxGetVarInfo(djia_2008)",
+                   not_typed_msg = "Be sure to use rxGetVarInfo on the 'djia_2008' dataset, and store the results as DJinfo.")
+
+test_student_typed("djia_scaled",
+                   not_typed_msg = "Be sure to pass 'djia_scaled' to the outFile argument to store your results.")
+
+test_student_typed("transformFunc = scaleVars",
+                   not_typed_msg = "Be sure to use transformFunc to pass scaleVars to rxDataStep.")
+
+test_student_typed("transformVars = c(",
+                   not_typed_msg = "Be sure to use transformVars to pass the names of the variables you want to transform to rxDataStep. It should be a list of quoted variable names - for example: c('Open', 'High')   ")
+
+test_student_typed("transformObjects = list(var_info = DJinfo",
+                   not_typed_msg = "Be sure to use transformObjects to pass DJinfo - which contains the high and low values - to rxDataStep.")
+
+
+
+
+# Check that the student's function is correctly defined
+test_function_definition(
+    name = "scaleVars",
+    test_expression_result({ test_data <- list(test1 = 1:10, test2 = 11:20);
+                            var_info <- rxGetVarInfo(test_data);
+                            scaleVars(test_data) }),
+    undefined_msg = "It looks like you didn't specify the scaleVars function - try again."
+)
+
+
+
+
+
+# Check that the student's output is correct
+# Make sure all of the scaled variables were created
+scaled_vars_created <- c("OpenScaled", "HighScaled", "LowScaled", "CloseScaled",
+                         "VolumeScaled") %in% rxGetVarNames(djia_scaled)
+
+scaled_vars_not_created <- rxGetVarNames(djia_scaled)[!scaled_vars_created]
+
+test_what(
+    expect_true(all(scaled_vars_created)),
+    feedback_msg = paste("Be sure to create a scaled version of each of the variables. It looks like you're missing:",
+                         paste(scaled_vars_not_created, collapse = ", "))
+)
+
+
+
+# Check the values are correctly scaled
+solution_df <- rxDataStep(
+    inData = djia_2008,
+    transformObjects = list(var_info = DJinfo),
+    transforms = list(
+        OpenScaled   = (Open - var_info$Open$low) / (var_info$Open$high - var_info$Open$low),
+        HighScaled   = (High - var_info$High$low) / (var_info$High$high - var_info$High$low),
+        LowScaled    = (Low  - var_info$Low$low) / (var_info$Low$high - var_info$Low$low),
+        CloseScaled  = (Close - var_info$Close$low) / (var_info$Close$high - var_info$Close$low),
+        VolumeScaled = (Volume - var_info$Volume$low) / (var_info$Volume$high - var_info$Volume$low)
+  )
+)
+
+    
+test_what(
+    expect_equivalent(object = rxDataStep(djia_scaled),
+                      expected = solution_df),
+    feedback_msg = "You've created all of the scaled variables, but their values don't look right - take a closer look at your code, or reset to the sample code if you need to."
+)
+
+
+success_msg("Nicely done! This is one way to perform the same transformation on many variables.")
+
+```
+
+*** =skills
+1, 3
+
+
+
+--- type:NormalExercise xp:50
+
+
+## Exercise 3: How to Break transformFunc
+  
+If you're still wondering why we can't just use `min()` and `max()` inside of
+the `transforms` list, this exercise should help. Your goal is to write a bad
+scaling function that appears to work - but returns incorrect results.
+
+
+*** =instructions
+
+Write a transform called `bad_scaleVars` that's similar to `scaleVars` from
+the last exercise, with one difference: use `min()` and `max()` to find the
+smallest and largest values, instead of calculating them with `rxGetVarInfo()`.
+
+A small dataset, `simple_xdf`, has been provided for you. It contains one variable
+that shows on which chunk of the XDF each record is stored, and two variables to
+be transformed: `value1` and `value2`.
+
+Use `rxDataStep` to apply `bad_scaleVars` to `value1` and `value2`, then view
+the results. You'll see that there's a minimum (scaled value = 0) and maximum
+(scaled value = 1) for *every* chunk, even though both variables have unique a
+unique minimum and maximum value. This is why it's crucial to use `rxGetVarInfo`
+to calculate global statistics when you're working on chunked data.
+
+
+In short:
+
+ - Create a `bad_scaleVars` function using `min` and `max`
+ - Use `rxDataStep` to apply it to the `simple_xdf` XDF file
+ - Pass `bad_scaleVars` to the `transformFunc` argument, and
+ - Pass `value1` and `value2` to the `transformVars` argument
+
+
+*** =hint
+
+ - To calculate the minimum inside of the `bad_scaleVars` function, use: 
+`min(dataList[[var_name]])`
+
+ - The maximum is calculated the same way, just using `max` instead of `min`.
+
+ - Pass `value1` and `value2` to `transformVars` as a character vector, like this:
+ 
+    transformVars = c("value1", "value2")
+    
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+set.seed(2015)
+
+# Make a very simple data.frame
+simple_df <- data.frame(chunk_id = LETTERS[sort(rep(1:5, 3))],
+                        value1 = 1:15, 
+                        value2 = sample(1:20, size = 15, replace = FALSE)
+)
+
+# Store in small chunks of 3 lines each
+simple_xdf <- tempfile(fileext = ".xdf")
+
+rxDataStep(inData = simple_df, 
+           outFile = simple_xdf, 
+           rowsPerRead = 3,
+           overwrite = TRUE)
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+
+
+# Examine the sample data
+rxDataStep(simple_xdf)
+
+
+# This "bad" version of scaleVars incorrectly assumes that `min` and `max` can
+# be used to find the lowest and highest values of the target variable.
+bad_scaleVars <- function(dataList) {
+    
+  # Loop over the names of the variables in dataList
+  for(var_name in names(dataList)) {
+      
+    # Create the new variable name by pasting "Scaled" onto the original
+  	dataList[[paste0(var_name, "Scaled")]] <-
+  	    
+  	    # Subtract the minimum value from all the values...
+  	    (dataList[[var_name]] - __________) /
+  	    
+  	    # ... then divide by the difference between the min and max values
+	        (__________ - __________)
+  }
+    
+  # Return dataList with its new variables
+  return(dataList)
+
+}
+
+
+
+# Use rxDataStep to apply bad_scaleVars to simple_xdf and
+# output the results to scaled_xdf
+scaled_xdf <- tempfile(fileext = ".xdf")
+
+rxDataStep(inData = simple_xdf,
+           outFile = scaled_xdf,
+           transformFunc = __________,
+           transformVars = __________,
+)
+
+
+
+# Check the results
+rxDataStep(scaled_xdf)
+
+
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+
+# Examine the sample data
+rxDataStep(simple_xdf)
+
+
+# This "bad" version of scaleVars incorrectly assumes that `min` and `max` can
+# be used to find the lowest and highest values of the target variable.
+
+bad_scaleVars <- function(dataList) {
+    
+  # Loop over the names of the variables in dataList
+  for(var_name in names(dataList)) {
+      
+    # Create the new variable name by pasting "Scaled" onto the original
+  	dataList[[paste0(var_name, "Scaled")]] <-
+  	    
+  	    # Subtract the minimum value from all the values...
+  	    (dataList[[var_name]] - min(dataList[[var_name]])) /
+  	    
+  	    # ... then divide by the difference between the min and max values
+	        (max(dataList[[var_name]]) - min(dataList[[var_name]]))
+  }
+    
+  # Return dataList with its new variables
+  return(dataList)
+
+}
+
+
+
+# Use rxDataStep to apply bad_scaleVars to simple_xdf and
+# output the results to scaled_xdf
+scaled_xdf <- tempfile(fileext = ".xdf")
+
+rxDataStep(inData = simple_xdf,
+           outFile = scaled_xdf,
+           transformFunc = bad_scaleVars, 
+           transformVars = c("value1", "value2")
+)
+
+
+# Check the results
+rxDataStep(scaled_xdf)
+
+
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+
+test_error()
+
+
+# Check that the student typed...
+test_student_typed("simple_xdf",
+                   not_typed_msg = "Be sure to pass 'simple_xdf' to the outFile argument to store your results.")
+
+test_student_typed("transformFunc = bad_scaleVars",
+                   not_typed_msg = "Be sure to use the transformFunc argument to pass bad_scaleVars to rxDataStep.")
+
+test_student_typed("transformVars = c(",
+                   not_typed_msg = "Be sure to use transformVars to pass the names of the variables you want to transform to rxDataStep. It should be a list of quoted variable names - for example: c('Open', 'High')   ")
+
+
+
+
+# Check that the student's function is correctly defined
+test_function_definition(
+    name = "bad_scaleVars",
+    test_expression_result({ test_data <- list(test1 = 1:10, test2 = 11:20);
+                            var_info <- rxGetVarInfo(test_data);
+                            bad_scaleVars(test_data) }),
+    undefined_msg = "It looks like you didn't specify the bad_scaleVars function - try again."
+)
+
+
+
+
+
+# Check that the student's output is correct
+# Make sure all of the scaled variables were created
+scaled_vars_created <- c("value1Scaled", "value2Scaled") %in% rxGetVarNames(scaled_xdf)
+
+scaled_vars_not_created <- rxGetVarNames(scaled_xdf)[!scaled_vars_created]
+
+test_what(
+    expect_true(all(scaled_vars_created)),
+    feedback_msg = paste("Be sure to create a scaled version of each of the variables. It looks like you're missing:",
+                         paste(scaled_vars_not_created, collapse = ", "))
+)
+
+
+
+# Check the values are correctly (er, incorrectly) scaled
+solution_df <- structure(list(
+    chunk_id = structure(c(1L, 1L, 1L, 2L, 2L, 2L, 
+3L, 3L, 3L, 4L, 4L, 4L, 5L, 5L, 5L), 
+               .Label = c("A", "B", "C", "D", "E"), 
+               class = "factor"), 
+    value1 = 1:15, 
+    value2 = c(2L, 16L, 6L, 1L, 3L, 18L, 7L, 20L, 8L, 15L, 12L, 4L, 17L, 19L, 5L),      
+    value1Scaled = c(0, 0.5, 1, 0, 0.5, 1, 0, 0.5, 1, 0, 0.5, 1, 0, 0.5, 1), 
+    value2Scaled = c(0, 1, 0.285714285714286, 0, 0.117647058823529, 1, 0, 1, 
+                     0.0769230769230769, 1, 0.727272727272727, 0, 0.857142857142857, 1, 0)),
+    .Names = c("chunk_id", "value1", "value2", "value1Scaled", "value2Scaled"), 
+    class = "data.frame", 
+    row.names = c(NA, -15L)
+)
+
+    
+test_what(
+    expect_equivalent(object = rxDataStep(scaled_xdf),
+                      expected = solution_df),
+    feedback_msg = "You've created all of the scaled variables, but their values don't look right - take a closer look at your code, or reset to the sample code if you need to."
+)
+
+
+success_msg("Good job! Notice how the 'maximum' scaled values correspond to many different numbers in the unscaled variables. That's how you can tell that maximums are being calculated within chunks.")
+
+```
+
+*** =skills
+1, 3

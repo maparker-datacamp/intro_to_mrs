@@ -1,0 +1,375 @@
+---
+title_meta  : Chapter 2
+title       : Types of Merges
+description : Using rxMerge to join tables
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Types of Merges
+
+*** =video_link
+
+```{r, eval = FALSE}
+//player.vimeo.com/video/147564261
+```
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 3: Merge Two Datasets
+
+Use `rxMerge` to join the datasets `customer` and `order` together using an
+inner join.
+
+*** =instructions
+
+You've been provided with two `data.frames`: `customer`, which contains the names and
+IDs of ten customers; and `order`, which contains the order ID, product name, 
+and ID of the customer who placed the order.
+
+ - Use the `nrow` function to see how many records are in each dataset. How many
+rows do you think the joined dataset will have?
+
+ - Use the `rxMerge` function to join these two datasets together into a single
+new `data.frame`, using an inner join (`rxMerge` works on XDF files, too)
+
+ - Use the `nrow` function to count how many rows the new `data.frame` has. Is it
+as many as you expected?
+
+
+
+*** =hint
+
+ - You can specify the join type by setting `type = "inner"`, but the default join type for `rxMerge` is an inner join - so this step is optional.
+ 
+ - Be sure to name the variable that the two datasets have in common, using
+the `matchVars` argument.
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+set.seed(100)
+
+customer <- data.frame(customer_id = 1:10,
+                       customer_name = c("Lin", "Karl", "Lupe", "Deshawn", "Colin",
+                                          "Sushma", "Annie", "Muhammad", "Hannah", "Rajesh")
+)
+
+order <- data.frame(order_id = seq(238, length.out = 15),
+                    customer_id = sample(1:10, size = 15, replace = TRUE),
+                    order_date = sample(seq(Sys.Date(), length.out = 30, by = -1),
+                                        size = 15, replace = TRUE),
+                    product = sample(LETTERS[1:5], size = 15, replace = TRUE)
+)
+
+
+```
+
+
+*** =solution
+```{r, eval = FALSE}
+
+# Examine the datasets
+customer
+order
+
+
+# How many rows does each dataset have?
+nrow(customer)
+nrow(order)
+
+
+# Join them together using rxMerge
+inner_joined <- rxMerge(inData1 = customer, 
+                        inData2 = order, 
+                        matchVars = "customer_id")
+    
+
+    
+# How many rows does the joined dataset have?
+nrow(inner_joined)
+
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+
+# Examine the datasets
+customer
+order
+
+
+# How many rows does each dataset have?
+
+
+# Join them together using rxMerge
+inner_joined <- rxMerge(
+    
+
+    
+# How many rows does the joined dataset have?
+
+
+
+
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+
+test_error()
+
+test_student_typed("rxMerge",
+                   not_typed_msg = "There are many ways to do joins in R, but be sure to use the rxMerge() function for now.")
+
+test_student_typed('matchVars = "customer_id"',
+                   not_typed_msg = 'Make sure you set the matchVars argument to "customer_id"')
+
+
+test_expression_output(nrow(inner_joined),
+                       incorrect_msg = "Your 'inner_joined' data.frame doesn't seem to have the right number of rows - check your code again.")
+
+
+test_object("inner_joined",
+            undefined_msg = "It seems like the 'inner_joined' object hasn't been created; check your code again.",
+            incorrect_msg = "Your 'inner_joined' doesn't look quite right - check it again.")
+
+```
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 4: Keep All Customer Records
+
+Join `customer` and `order` using a left outer join
+
+*** =instructions
+
+In the last exercise, you used an inner join to merge `customer` and `order`.
+Inner joins only keep the records that exist in both tables - so if a customer
+hasn't placed any orders, an inner join would not include that customer in its
+output. A left outer join will. 
+
+ - Set `type = "left"` and merge the tables, then compare the results with the inner join.
+
+
+
+*** =hint
+
+
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+set.seed(100)
+
+customer <- data.frame(customer_id = 1:10,
+                       customer_name = c("Lin", "Karl", "Lupe", "Deshawn", "Colin",
+                                          "Sushma", "Annie", "Muhammad", "Hannah", "Rajesh")
+)
+
+order <- data.frame(order_id = seq(238, length.out = 15),
+                    customer_id = sample(1:10, size = 15, replace = TRUE),
+                    order_date = sample(seq(Sys.Date(), length.out = 30, by = -1),
+                                        size = 15, replace = TRUE),
+                    product = sample(LETTERS[1:5], size = 15, replace = TRUE)
+)
+
+
+```
+
+
+*** =solution
+```{r, eval = FALSE}
+
+# Here's the inner join from the previous exercise
+inner_joined <- rxMerge(inData1 = customer, 
+                        inData2 = order, 
+                        matchVars = "customer_id")
+
+
+# Now create a left outer join using the same datasets
+left_joined <- rxMerge(inData1 = customer, 
+                       inData2 = order, 
+                       matchVars = "customer_id",
+                       type = "left")
+
+
+# Compare the results
+inner_joined
+left_joined
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+
+# Here's the inner join from the previous exercise
+inner_joined <- rxMerge(inData1 = customer, 
+                        inData2 = order, 
+                        matchVars = "customer_id")
+
+
+# Now create a left outer join using the same datasets
+left_joined <- rxMerge(
+
+    
+
+
+# Compare the results
+inner_joined
+left_joined
+
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+# test_student_typed("rxMerge",
+#                    not_typed_msg = "There are many ways to do joins in R, but be sure to use the rxMerge() function for now.")
+
+test_function("rxMerge", 
+              args = c("matchVars", "type"), 
+              index = 2,
+              incorrect_msg = "Be sure to use both the 'matchVars' and 'type' arguments to construct your left join.",
+              not_called_msg = "You'll need to call rxMerge at least once!")
+
+test_student_typed('matchVars = "customer_id"',
+                   not_typed_msg = 'Make sure you set the matchVars argument to "customer_id"')
+
+test_student_typed('type = "left"',
+                   not_typed_msg = 'Make sure you set the type argument to "left" to create a left outer join.')
+                 
+
+test_expression_output(nrow(left_joined),
+                       incorrect_msg = "Your 'left_joined' data.frame doesn't seem to have the right number of rows - check your code again.")
+
+
+test_object("left_joined",
+            undefined_msg = "It seems like the 'left_joined' object hasn't been created; check your code again.",
+            incorrect_msg = "Your 'left_joined' doesn't look quite right - check it again.")
+
+```
+
+
+
+
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 5: Stack Two Tables
+
+Join `customer` and `new_customer` using a union join
+
+*** =instructions
+
+In this exercise, imagine your company has acquired a competitor. Now you've
+got two tables with customer data in them: `customer` from the previous exercises,
+and `new_customer`. Use `rxMerge` with `type = "union"` to combine these two 
+tables into a new table called `all_customers`.
+
+
+
+*** =hint
+
+
+
+
+*** =pre_exercise_code
+```{r, eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+set.seed(100)
+
+customer <- data.frame(customer_id = 1:10,
+                       customer_name = c("Lin", "Karl", "Lupe", "Deshawn", "Colin",
+                                          "Sushma", "Annie", "Muhammad", "Hannah", "Rajesh")
+)
+
+new_customer <- data.frame(customer_id = 11:20,
+                           name = c("Jose", "Yuri", "Neil", "Fatma", "Sophia",
+                                    "Tamar", "Brian", "Sarah", "Mei", "Joseph")
+)
+
+```
+
+
+*** =solution
+```{r, eval = FALSE}
+
+# Union the two tables together
+all_customers <- rxMerge(inData1 = customer, 
+                         inData2 = new_customer, 
+                         type = "union")
+
+# Review the results
+all_customers
+
+```
+
+*** =sample_code
+```{r, eval = FALSE}
+
+# Union the two tables together
+all_customers <- rxMerge(
+
+
+# Review the results
+all_customers
+
+
+```
+
+*** =sct
+```{r, eval = FALSE}
+
+test_error()
+
+test_function("rxMerge", 
+              args = "type",
+              incorrect_msg = "Be sure to use the 'type' argument to specify that you want a union join.",
+              not_called_msg = "You'll need to call rxMerge to run the union query.")
+
+test_student_typed('type = "union"',
+                   not_typed_msg = 'Make sure you set the type argument to "union".')
+
+test_expression_output(nrow(all_customers),
+                       incorrect_msg = "Your 'all_customers' data.frame doesn't seem to have the right number of rows - check your code again.")
+
+
+test_object("all_customers",
+            undefined_msg = "It seems like the 'all_customers' object hasn't been created; check your code again.",
+            incorrect_msg = "Your 'all_customers' doesn't look quite right - check it again.")
+
+```
+
+
+
+
+
+
+
+
+

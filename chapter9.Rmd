@@ -1,0 +1,267 @@
+---
+title_meta  : Chapter 2
+title       : Cross-Chunk Communication
+description : Learn to communicate across chunks by lagging a variable to calculate change in price. 
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Lagging a Variable 
+
+*** =video_link
+
+```{r,eval = FALSE}
+//player.vimeo.com/video/141147217
+```
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 4: Calculate Percent Change From Previous Day
+  
+For each trading day, calculate the percent change in closing price 
+from the previous close. 
+
+
+*** =instructions
+
+In the previous exercise, you used `transformObjects` to distribute pre-calculated
+statistics (the global minimum and maximum) simultaneously to all the XDF chunks.
+But any time 
+a computation requires passing results from one chunk to another, we have to use
+a different set of tools: a custom `transformFunc` that uses the utility functions
+`.rxSet`, `.rxGet`, `.rxStartRow`, and `.rxNumRows`.
+
+In this exercise, your objective is to calculate the day-to-day change in closing
+prices as a percentage of the previous day's price.
+
+ - Complete the `price_change` function and use `rxDataStep` to apply it to the
+`djia_small_chunks` dataset. 
+
+
+*** =hint
+
+ - `.rxSet` takes two arguments: a character string to use as a variable name
+   and a value to assign to that variable. 
+ - `.rxGet` takes a single argument: the name of a variable previously assigned
+   by `.rxSet`.
+ - To calculate the percent change between the `Close` and `previousClose` 
+   columns, use the expression:
+   
+`100 * (dataList$Close - previousClose) / previousClose`
+
+ - To apply `calc_price_change` to the XDF file, pass it to the `rxDataStep`
+   argument `transformFunc`.
+
+
+*** =pre_exercise_code
+```{r,eval = FALSE}
+library(RevoScaleR)
+rxOptions(reportProgress = 0)
+
+# Create a small subset of the DJIA data
+djia_subset <- tempfile(fileext = ".xdf")
+
+rxDataStep(inData = file.path(rxGetOption("sampleDataDir"), "DJIAdaily.xdf"),
+           outFile = djia_subset, 
+           varsToKeep = "Close",
+           transforms = list(Date = as.Date(Date)),
+           rowSelection = (Date >= as.Date("2008-01-01")) & (Date <= as.Date("2008-01-31"))
+)
+
+
+
+# Cut it into 5-row chunks
+djia_small_chunks <- RxXdfData( tempfile(fileext=".xdf") )
+
+rxDataStep(inData = djia_subset,
+           outFile = djia_small_chunks, 
+           rowsPerRead = 5
+)
+
+file.remove(djia_subset)
+rm(djia_subset)
+
+```
+
+*** =solution
+
+```{r,eval = FALSE}
+
+# Function for calculating day-to-day price changes. Remember, dataList will be
+# a list containing all the variables of the input dataset in rxDataStep
+calc_price_change <- function(dataList) {
+
+    # For the very first day in the dataset, there's no way to calculate change,
+    # so the value should be NA.
+    if(.rxStartRow == 1) { val1 <- NA } else {
+        
+        # Otherwise, the first value for *this* chunk should be the last value
+        # of the previous chunk. Use .rxGet to retrieve "last_value"; we'll create it
+        # in a few more lines.
+        val1 <- .rxGet("last_value")
+    }
+	
+    
+    # Shift all the prices ahead one day, and insert val1 at the top
+	previousClose <- c(val1, dataList$Close[-.rxNumRows])
+	
+	# Calculate the percentage change between Close and previousClose
+	dataList$pct_change <- 100 * (dataList$Close - previousClose) / previousClose
+	
+	# Make the last price from this chunk available for the next chunk with .rxSet
+	.rxSet("last_value", dataList$Close[.rxNumRows])
+	
+	return(dataList)
+	
+}
+
+
+# Make a file to store the transformed XDF output
+djia_pct_change <- RxXdfData( tempfile(fileext = ".xdf") )
+
+# Apply the new, improved transform to chunked data
+rxDataStep(inData = djia_small_chunks, 
+           outFile = djia_pct_change, 
+           transformFunc = calc_price_change,
+           transformVars = "Close"
+)
+
+# Check that it worked
+head(djia_pct_change)
+
+```
+
+
+*** =sample_code
+
+```{r,eval = FALSE}
+
+# Function for calculating day-to-day price changes. Remember, dataList will be
+# a list containing all the variables of the input dataset in rxDataStep
+calc_price_change <- function(dataList) {
+
+    # For the very first day in the dataset, there's no way to calculate change,
+    # so the value should be NA.
+    if(.rxStartRow == 1) { val1 <- NA } else {
+        
+        # Otherwise, the first value for *this* chunk should be the last value
+        # of the previous chunk. Use .rxGet to retrieve "last_value"; we'll set it
+        # in a few more lines.
+        val1 <- _________
+        
+    
+    # Shift all the prices ahead one day, and insert val1 at the top
+	previousClose <- c(val1, dataList$Close[-.rxNumRows])
+	
+	# Calculate the percentage change between Close and previousClose.
+	# Calculate the difference between Close and previousClose, then divide by
+	# previousClose. Don't forget to multiply by 100 to make it a proper percentage.
+	dataList$pct_change <- 100 * (dataList$Close - ________) / ________
+	
+	# Make the last price from this chunk available for the next chunk with .rxSet
+	.rxSet("last_value", _________)
+	
+	return( dataList )
+}
+
+# Make a file to store the transformed XDF output
+djia_pct_change <- RxXdfData( tempfile(fileext = ".xdf") )
+
+# Apply the new, improved transform to chunked data
+rxDataStep(inData = djia_small_chunks, 
+           outFile = djia_pct_change, 
+           transformFunc = ________
+)
+
+# Check that it worked
+head(djia_pct_change)
+
+```
+
+
+*** =sct
+
+```{r,eval = FALSE}
+
+test_error()
+
+
+# Check that the student typed...
+test_student_typed("djia_small_chunks",
+                   not_typed_msg = "Be sure to pass 'djia_small_chunks' to the inData argument in rxDataStep.")
+
+
+# Check that the student typed...
+test_student_typed("djia_pct_change",
+                   not_typed_msg = "Be sure to pass 'djia_pct_change' to the outFile argument in rxDataStep to store your results.")
+
+test_student_typed("transformFunc = calc_price_change",
+                   not_typed_msg = "Be sure to use the transformFunc argument to pass calc_price_change to rxDataStep.")
+
+
+
+
+
+# Check that the student's function is correctly defined
+# Not sure how to do this yet
+
+
+
+
+
+# Check that the student's output is correct
+solution_df <- structure(list(Close = c(13043.9599609375, 13056.7197265625, 
+12800.1796875, 12827.490234375, 12589.0703125, 12735.3095703125, 
+12853.08984375, 12606.2998046875, 12778.150390625, 12501.1103515625, 
+12466.16015625, 12159.2099609375, 12099.2998046875, 11971.1904296875, 
+12270.169921875, 12378.6103515625, 12207.169921875, 12383.8896484375, 
+12480.2998046875, 12442.830078125, 12650.3603515625), Date = structure(c(13880, 
+13881, 13882, 13885, 13886, 13887, 13888, 13889, 13892, 13893, 
+13894, 13895, 13896, 13900, 13901, 13902, 13903, 13906, 13907, 
+13908, 13909), class = "Date"), pct_change = c(NA, 0.097821257219521, 
+-1.96481232985799, 0.213360652285765, -1.85866383461423, 1.16163667516652, 
+0.924832433693325, -1.92008335787449, 1.36321195434048, -2.16807621285908, 
+-0.279576728223438, -2.46226738197815, -0.492714217802526, -1.05881643622359, 
+2.4974917402204, 0.883772844043298, -1.38497314979997, 1.44767155445114, 
+0.778512720857168, -0.300230981217508, 1.66787034890356)), .Names = c("Close", 
+"Date", "pct_change"), class = "data.frame", row.names = c(NA, 
+-21L))
+
+    
+test_what(
+    expect_equivalent(object = rxDataStep(djia_pct_change),
+                      expected = solution_df),
+    feedback_msg = "Your output doesn't look quite right - try again."
+)
+
+
+success_msg("Well done. Passing data between chunks isn't easy, but it is essential for some operations.")
+
+```
+
+*** =skills
+1, 3
+
+
+
+
+
+
+
+--- type:VideoExercise
+
+
+## Lagging by Merging 
+
+*** =video_link
+
+```{r,eval = FALSE}
+//player.vimeo.com/video/141147220
+```
+
+

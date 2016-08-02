@@ -1,0 +1,715 @@
+---
+title_meta  : Chapter 1
+title       : Introduction to Summary Statistics with Revolution R Enterprise
+description : Functions for describing and aggregating data
+attachments :
+ slides_link: 
+framework   : datacamp
+mode        : selfcontained
+
+
+--- type:VideoExercise
+
+## Introduction to Summary Statistics
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141148546
+```
+
+
+--- type:VideoExercise
+
+## Summarizing Numeric Variables 
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141148550
+```
+
+--- type:NormalExercise xp:50
+
+## Exercise 1: Summarize a Numeric Variable
+  
+
+*** =instructions
+
+Use `rxSummary` to calculate descriptive statistics for one of the numeric
+variables on the dataset `diamondsXdf`.
+
+ - First, use `rxGetVarInfo` to identify a numeric variable,
+ - then use `rxSummary` to summarize it.
+
+
+*** =hint
+The basic syntax you need is: `rxSummary( ~ some_variable, data = diamondsXdf)`.
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Use the diamonds dataset from ggplot2
+library(ggplot2)
+
+# Create a path and a data source
+diamondsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+# Select only a subsample of diamonds, to keep it fast
+set.seed(2015)
+rxImport(inData = diamonds[sample(nrow(diamonds), size = 1e4), ], outFile = diamondsXdf)
+
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Examine the variables on the diamonds dataset
+rxGetVarInfo(diamondsXdf)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+# Examine the variables on the diamonds dataset
+rxGetVarInfo(diamondsXdf)
+
+rxSummary( ~ depth, data = diamondsXdf)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxSummary",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSummary - be sure to call that function.")
+
+test_student_typed("diamondsXdf",
+                   not_typed_msg = "Be sure to use 'diamondsXdf' as your dataset; it's already been created for you.")
+
+# Identifythe numeric variables
+diamonds_numerics <- c("carat", "depth", "table", "price", "x", "y", "z")
+
+test_student_typed(paste("~", diamonds_numerics),
+                   not_typed_msg = "Your formula doesn't seem quite right - be sure to put one of the numeric variables on the right-hand side of the tilde (~).")
+
+
+# Catch-all
+test_output_contains(expr = "Summary Statistics Results for: ~",
+                     incorrect_msg = "Your output doesn't seem quite right - try again.")
+
+
+
+success_msg("Good work! That's all it takes to summarize a variable.")
+
+
+```
+
+*** =skills
+1, 3
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 2: Summarize a Factor Variable
+  
+
+*** =instructions
+
+You can also use `rxSummary` to summarize factor variables. The syntax is the
+same, but the output is a frequency table instead of the quantitative descriptive
+statistics. In this exercise:
+
+ - Pick one of the factors on `diamondsXdf` and
+summarize it.
+
+
+
+*** =hint
+The basic syntax you need is: `rxSummary( ~ some_variable, data = diamondsXdf)`.
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Use the diamonds dataset from ggplot2
+library(ggplot2)
+
+# Create a path and a data source
+diamondsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+# Select only a subsample of diamonds, to keep it fast
+set.seed(2015)
+rxImport(inData = diamonds[sample(nrow(diamonds), size = 1e4), ], outFile = diamondsXdf)
+
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Use `rxGetVarInfo` to pick a factor
+rxGetVarInfo(diamondsXdf)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+# Use `rxGetVarInfo` to pick a factor
+rxGetVarInfo(diamondsXdf)
+
+rxSummary( ~ cut, data = diamondsXdf)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxSummary",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSummary - be sure to call that function.")
+
+test_student_typed("diamondsXdf",
+                   not_typed_msg = "Be sure to use 'diamondsXdf' as your dataset; it's already been created for you.")
+
+# Identify the factor variables
+diamonds_factors <- c("cut", "color", "clarity")
+
+test_student_typed(paste("~", diamonds_factors),
+                   not_typed_msg = "Your formula doesn't seem quite right - be sure to put one of the factor variables on the right-hand side of the tilde (~).")
+
+
+# Catch-all
+test_output_contains(expr = "Category Counts for",
+                     incorrect_msg = "Your output doesn't seem quite right - try again.")
+
+
+success_msg("Nice work. Take a moment to see how the output changes for a factor.")
+
+
+```
+
+*** =skills
+1, 3
+
+--- type:NormalExercise xp:50
+
+## Exercise 3: Summarize Multiple Variables
+  
+
+*** =instructions
+
+If you want to describe one variable, chances are you want to describe several.
+
+ - Use `rxSummary` to summarize `carat`, `cut`, and `price` on the `diamondsXdf`
+datset.
+
+
+*** =hint
+The basic syntax you need is: `rxSummary( ~ some_variable + another + some_other, data = diamondsXdf)`
+
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Use the diamonds dataset from ggplot2
+library(ggplot2)
+
+# Create a path and a data source
+diamondsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+# Select only a subsample of diamonds, to keep it fast
+set.seed(2015)
+rxImport(inData = diamonds[sample(nrow(diamonds), size = 1e4), ], outFile = diamondsXdf)
+
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Use rxGetVarInfo to identify the factors
+rxGetVarInfo(diamondsXdf)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+# Use rxGetVarInfo to identify the factors
+rxGetVarInfo(diamondsXdf)
+
+rxSummary( ~ carat + cut + price, data = diamondsXdf)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+
+test_error()
+
+test_student_typed("rxSummary",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSummary - be sure to call that function.")
+
+test_student_typed("diamondsXdf",
+                   not_typed_msg = "Be sure to use 'diamondsXdf' as your dataset; it's already been created for you.")
+
+test_student_typed("carat",
+                   not_typed_msg = "You missed the variable 'carat' - try again.")
+
+test_student_typed("cut",
+                   not_typed_msg = "You missed the variable 'cut' - try again.")
+
+test_student_typed("price",
+                   not_typed_msg = "You missed the variable 'price' - try again.")
+
+test_output_contains("Category Counts for cut",
+                     incorrect_msg = "It doesn't look like you summarized the factor variable 'cut' correctly - try again.")
+
+test_output_contains("carat.*084551",
+                     incorrect_msg = "It doesn't look like you summarized the variable 'carat' correctly - try again.")
+
+test_output_contains("price.*3406",
+                     incorrect_msg = "It doesn't look like you summarized the variable 'price' correctly - try again.")
+
+success_msg("Excellent - you've learned the basics of rxSummary.")
+
+
+```
+
+*** =skills
+1, 3
+
+
+
+--- type:VideoExercise
+
+## Groupwise Summaries
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141148547
+```
+
+--- type:NormalExercise xp:50
+
+## Exercise 4: Groupwise Summaries
+
+
+
+*** =instructions
+
+`rxSummary` makes comparing the distribution of variables between groups easy by
+taking advantage of R's formula syntax. In the last few exercises, you summarized
+variables by naming them on the right-hand side of the formula (` ~ carat`); to
+perform the same summaries for the records in each level of a factor, we move
+the outcome/dependent variable to the left-hand side of the function, and put
+the grouping variable on the right-hand side: `carat ~ cut`
+
+ - Use `rxSummary` to summarize one of the numeric variables on `diamondsXdf` 
+for each level of one of the factors.
+
+
+*** =hint
+Make sure to put one of the numeric variables (`carat`, `depth`, `table`, `price`,
+`x`, `y`, `z`) on the left-hand side of the tilde (~), and one of the factors
+(`cut`, `color`, `clarity`) on the right-hand side.
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Use the diamonds dataset from ggplot2
+library(ggplot2)
+
+# Create a path and a data source
+diamondsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+# Select only a subsample of diamonds, to keep it fast
+set.seed(2015)
+rxImport(inData = diamonds[sample(nrow(diamonds), size = 1e4), ], outFile = diamondsXdf)
+
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Use rxGetVarInfo to pick one numeric variable and one factor
+rxGetVarInfo(diamondsXdf)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+# Use rxGetVarInfo to pick one numeric variable and one factor
+rxGetVarInfo(diamondsXdf)
+
+rxSummary(depth ~ clarity, data = diamondsXdf)
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxSummary",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSummary - be sure to call that function.")
+
+test_student_typed("diamondsXdf",
+                   not_typed_msg = "Be sure to use 'diamondsXdf' as your dataset; it's already been created for you.")
+
+# Identify the numeric and factor variable names
+diamonds_numerics <- c("carat", "depth", "table", "price", "x", "y", "z")
+diamonds_factors <- c("cut", "color", "clarity")
+
+test_student_typed(
+    paste0("rxSummary(", diamonds_numerics, " ~"),
+    not_typed_msg = "Be sure to put one of the numeric variables on the left-hand side of the formula.")
+
+
+# Test for the validity of the right-hand side (and, consequently, the whole formula)
+diamonds_combo <- expand.grid(num = diamonds_numerics, fac = diamonds_factors)
+
+permissible_formulas <- apply(diamonds_combo, 
+                              MARGIN = 1, 
+                              FUN = function(x) {
+                                  paste("rxSummary(", x["num"], "~", x["fac"])
+                              }  
+)
+
+test_student_typed(permissible_formulas,
+                   not_typed_msg = "Be sure to put one of the factor vectors (cut, color, clarity) on the right-hand side of the formula.")
+
+
+test_output_contains(expr = "Summary Statistics Results for:",
+                     incorrect_msg = "Your output doesn't look quite right - try again.")
+                     
+
+
+success_msg("Excellent - you've learned the basics of rxSummary.")
+
+```
+
+*** =skills
+1, 3
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 5: Multiple Grouping Variables
+  
+Calculate summary statistics using two grouping variables
+
+
+*** =instructions
+
+ - Now, try summarizing a numeric variable using *two* factors. 
+
+Your numeric
+variable should still be on the left-hand side of the equation, but now you'll
+have two factors on the right-hand side, joined by a `:`. It should look something
+like this:
+
+    someVar ~ factor1 : factor2
+    
+
+
+*** =hint
+The basic syntax you need is `rxSummary(numericVar ~ factor1 : factor2, data = diamondsXdf`
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Use the diamonds dataset from ggplot2
+library(ggplot2)
+
+# Create a path and a data source
+diamondsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+# Select only a subsample of diamonds, to keep it fast
+set.seed(2015)
+rxImport(inData = diamonds[sample(nrow(diamonds), size = 1e4), ], outFile = diamondsXdf)
+
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# Use rxGetVarInfo to pick one numeric variable and two factors
+rxGetVarInfo(diamondsXdf)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+# Use rxGetVarInfo to pick one numeric variable and two factors
+rxGetVarInfo(diamondsXdf)
+
+rxSummary(depth ~ cut : color, data = diamondsXdf)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxSummary",
+                   not_typed_msg = "It doesn't appear that you made a call to rxSummary - be sure to call that function.")
+
+test_student_typed("diamondsXdf",
+                   not_typed_msg = "Be sure to use 'diamondsXdf' as your dataset; it's already been created for you.")
+
+
+# Identify the numeric and factor variable names
+diamonds_numerics <- c("carat", "depth", "table", "price", "x", "y", "z")
+diamonds_factors <- c("cut", "color", "clarity")
+
+test_student_typed(
+    paste0("rxSummary(", diamonds_numerics, " ~"),
+    not_typed_msg = "Be sure to put one of the numeric variables on the left-hand side of the formula.")
+
+
+# Test for the validity of the right-hand side (and, consequently, the whole formula)
+diamonds_combo <- expand.grid(num = diamonds_numerics, 
+                              fac1 = diamonds_factors, 
+                              fac2 = diamonds_factors)
+
+permissible_formulas <- apply(diamonds_combo, 
+                              MARGIN = 1, 
+                              FUN = function(x) {
+                                  paste("rxSummary(", x["num"], "~", x["fac1"], ":", x["fac2"])
+                              }  
+)
+
+test_student_typed(permissible_formulas,
+                   not_typed_msg = "Be sure to put two of the factor vectors (cut, color, clarity) on the right-hand side of the formula, separated by a colon.")
+
+
+test_output_contains(expr = "Summary Statistics Results for:",
+                     incorrect_msg = "Your output doesn't look quite right - try again.")
+
+success_msg("Good job - hopefully the formula syntax is becoming more familiar.")
+```
+
+*** =skills
+1, 3
+
+
+
+--- type:VideoExercise
+
+## Calculating Quantiles
+
+*** =video_link
+
+```{r,eval=FALSE}
+//player.vimeo.com/video/141148551
+```
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 6: Quantiles
+
+Calculate the quantiles of the `price` variable
+
+
+*** =instructions
+
+For variables with a long-tailed distribution like the prices of the diamonds in
+`diamondsXdf`, quantiles can be more descriptive than the mean and standard
+deviation.
+
+ - Use `rxQuantile` to summarize the `price` variable from `diamondsdXdf.
+ 
+The basic syntax you need is `rxQuantile(varName = "variable", data = dataset)`.
+
+*** =hint
+Be sure that you've put quotes around `price` when you pass it to `varName`.
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Use the diamonds dataset from ggplot2
+library(ggplot2)
+
+# Create a path and a data source
+diamondsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+# Select only a subsample of diamonds, to keep it fast
+set.seed(2015)
+rxImport(inData = diamonds[sample(nrow(diamonds), size = 1e4), ], outFile = diamondsXdf)
+
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# This histogram shows how long-tailed and non-normal the price variable is
+rxHistogram( ~ price, data = diamondsXdf)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+# This histogram shows how long-tailed and non-normal the price variable is
+rxHistogram( ~ price, data = diamondsXdf)
+
+rxQuantile(varName = "price", data = diamondsXdf)
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxQuantile",
+                   not_typed_msg = "It doesn't appear that you made a call to rxQuantile - be sure to call that function.")
+
+test_student_typed("diamondsXdf",
+                   not_typed_msg = "Be sure to use 'diamondsXdf' as your dataset; it's already been created for you.")
+
+test_student_typed("rxQuantile('price'",
+                   not_typed_msg = "Make sure that you put quotes around the name of the price variable: \"price\"")
+
+test_output_contains(expr = "0%   25%   50%   75%  100%",
+                     incorrect_msg = "Your output doesn't look quite right - be sure to just let rxQuantile calculate the default percentiles.")
+
+success_msg("Good work!")
+```
+
+*** =skills
+1, 3
+
+
+
+--- type:NormalExercise xp:50
+
+## Exercise 7: Non-Default Quantiles
+  
+Calculate non-standard quantiles for the `price` variable.
+
+
+*** =instructions
+
+The default quantiles are useful, but sometimes you may be interested in others.
+
+ - Use the `probs` argument to calculate the 0.01 and 0.99 quantiles.
+
+
+*** =hint
+Pass the two desired quantiles to the `probs` argument as a vector: `c(0.01, 0.99)`
+
+*** =pre_exercise_code
+```{r,eval=FALSE}
+
+library(RevoScaleR)
+rxOptions(reportProgress=0)
+
+# Use the diamonds dataset from ggplot2
+library(ggplot2)
+
+# Create a path and a data source
+diamondsXdf <- RxXdfData(tempfile(fileext = ".xdf"))
+
+# Select only a subsample of diamonds, to keep it fast
+set.seed(2015)
+rxImport(inData = diamonds[sample(nrow(diamonds), size = 1e4), ], outFile = diamondsXdf)
+
+
+```
+
+
+*** =sample_code
+
+```{r,eval=FALSE}
+# This histogram shows how long-tailed and non-normal the price variable is
+rxHistogram( ~ price, data = diamondsXdf)
+```
+
+*** =solution
+
+```{r,eval=FALSE}
+# This histogram shows how long-tailed and non-normal the price variable is
+rxHistogram( ~ price, data = diamondsXdf)
+
+rxQuantile(varName = "price", data = diamondsXdf, probs = c(0.01, 0.99))
+
+```
+
+
+*** =sct
+
+```{r,eval=FALSE}
+
+test_error()
+
+test_student_typed("rxQuantile",
+                   not_typed_msg = "It doesn't appear that you made a call to rxQuantile - be sure to call that function.")
+
+test_student_typed("diamondsXdf",
+                   not_typed_msg = "Be sure to use 'diamondsXdf' as your dataset; it's already been created for you.")
+
+test_student_typed("rxQuantile('price'",
+                   not_typed_msg = "Make sure that you put quotes around the name of the price variable: \"price\"")
+
+
+test_student_typed("rxQuantile.*probs = .*",
+                   not_typed_msg = "Be sure to call the probs argument to set the desired quantiles.")
+
+
+test_output_contains(expr = "1%   99%",
+                     incorrect_msg = "Your output doesn't look quite right - be sure you've set the probs argument to c(0.01, 0.99)."
+
+success_msg("Excellent! You've learned the essential parts of rxQuantile's functionality.")
+```
+
+*** =skills
+1, 3
+
