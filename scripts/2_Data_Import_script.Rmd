@@ -1,0 +1,417 @@
+
+
+# Data Management with RRE:    
+# Importing Data
+
+
+## Intro
+
+Welcome to Data Management with Revolution R Enterprise. In this session,
+we're going to discuss some special ways of importing data that are unique to
+RRE, and that can dramatically improve the speed of your analyses.
+
+In Open-Source R, data resides in-memory by default - as a list, data.frame,
+and so on. That's a very useful default; the memory of your computer provides
+the fastest access to data for computations. 
+But only if all your data fits into memory.
+Modern PCs often have 8 to 16 gigabytes of RAM, and high-end servers can have
+much more. But as the price of memory has fallen, the typical size of a 
+dataset has grown - so it's *still* common for analyses on big data to run out
+of memory.
+
+
+
+## The XDF File
+
+That's where RRE comes in. Rather than storing data in
+memory, we've developed a data structure called an XDF - an external data 
+frame - which is actually a file stored on your hard drive and read into
+memory as needed. XDF files have been optimized for big data
+in three important ways:
+
+### Chunking and PEMAs
+
+First, XDF files are designed to make reading *chunks* of data fast. 
+This is key for circumventing Open-Source R's memory limitations. RRE
+can read an XDF file one manageable chunk at a time, compute intermediate 
+results, and then clear that chunk away to make room for the next. Once all the
+chunks have been read and their intermediate results computed, a final result
+can be calculated.
+
+This is pretty different from the way Open-Source R does computations. RRE
+comes with a wide variety of data manipulation and machine learning algorithms
+to work with this chunking method. These algorithms are called PEMAs:
+
+ - parallel
+ - external memory 
+ - algorithms. 
+
+You'll learn more about how PEMAs work in our
+course titled "The Course Where You Learn About PEMAs"[TODO].
+
+Chunking and PEMAs are crucial for bypassing the memory limits of a *single*
+computer, but they also allow RRE users to take advantage of *distributed*
+computing environments - whether that's a local compute cluster or an
+on-demand cloud. Chunks can be efficiently distributed across nodes, allowing
+complex computations to take advantage of as many resources as desired.
+Crucially, a node doesn't need to read the entire XDF file to extract its
+assigned chunk. 
+
+Being optimized for chunking also makes it very fast to add *new* data to an
+existing XDF file - a new chunk can simply be *appended* to the existing file
+without rewriting the entire XDF. It's very common for data analysts to 
+receive data at intervals - hourly, daily - and the XDF's fast appending
+means incorporating those new datasets into your existing XDF is a breeze.
+
+
+
+### Column Orientation
+
+So - the chunked nature of XDF data has tremendous benefits for working with
+big data. But *within* each chunk, XDF files are column-oriented. That means
+that all of the values of a particular column - what we'd call a vector in R - 
+are stored together, allowing them to be read off the disk in a single pass.
+That's in contrast to the
+more traditional row-oriented storage, in which all of the values of a *row*
+are stored together - in which case extracting all of the values of a particular
+column requires reading every record in the dataset and picking out that
+particular value.
+
+In statistics and machine learning, we're usually much more concerned with
+efficient retrieval of an entire *column* rather than a particular row - 
+for example,
+when calculating means and standard deviations, or assembling a model matrix
+for a regression. Column-oriented storage *significantly* speeds up those kinds
+of operations.
+
+
+
+### Metadata
+
+In addition to column column orientation, XDF files have one more trick for 
+quickly generating common summary statistics:
+metadata. Whenever you create or modify an XDF file, key details about the
+data are computed and stored. The number of rows, the highest and lowest
+values of continuous variables, and the count of records corresponding to
+each level of factor variables are all noted and can be retrieved more or less
+instantly - no additional computation required.
+
+
+
+### Compression
+
+There's one more thing you should know about XDF files: they're
+compressed by default.
+That helps save disk space and reduces the number of hard drive reads required
+to get your data into memory - but it also adds a certain amount of
+computational overhead for the compressing and decompressing. If you find
+yourself running out of hard drive space, or if you're trying to finely tune
+a process for maximum speed, you can experiment with different levels of
+XDF compression when you create the XDF file.
+
+
+## Importing Data into RRE
+
+Speaking of which - let's create an XDF! The workhorse function for 
+creating XDF files is rxImport, from the RevoScaleR package that's included
+with RRE. Its key arguments are simply "inData",
+which will often be a file path to a CSV, SAS, or SPSS file, and
+"outFile" - a path to the XDF file you'd like to create. When you run this
+command, rxImport will automatically detect the format of "inData" based on
+its file extension, and write it to a new XDF file.
+
+```{r basic_rximport}
+rxImport(inData = "example.csv", outFile = "example.xdf")
+```
+
+Note that the output of rxImport *doesn't* need to be assigned to anything.
+Usually, when you're importing data in Open-Source R, you have to assign the
+output to be able to use it:
+
+```{r read_csv}
+example <- read.csv("example.csv")
+head(example)
+```
+
+But remember: an XDF is a *file*, not an R object - it doesn't actually 
+exist in R's memory. It's really the *path* to the XDF that you're going
+to be working with - so it's useful to store *that path* as an R object:
+
+```{r store_xdf_path}
+xdfPath <- "../data/example.xdf"
+```
+
+
+Once you've created your XDF, it's a good idea to check that the import went
+as expected. The function rxGetInfo is a great way to do that; it accesses
+the XDF's metadata for nearly-instantaneous results. 
+I'll set "getVarInfo" to TRUE so that I'll also get metadata for each of 
+the imported variables.
+
+```{r rxGetInfo}
+rxGetInfo(xdfPath, getVarInfo = TRUE)
+```
+
+Looks good! As you can see, rxGetInfo takes the path to my XDF file as its
+first argument, the way many Open-Source R functions take a data frame. 
+You can pass a path like this to most of the functions from the RevoScaleR
+package, which are easy to recognize because they're all prefixed with "rx".
+
+
+## Configuring rxImport
+
+Pulling a CSV file into XDF without modification is the most basic data import
+scenario - but rxImport comes with a powerful array of options for more
+efficient data import. Many of these options, like subsetting and
+data transformation, will be covered later in this series of courses;
+for now, we'll focus on options that are either essential for working with 
+XDFs, or particularly useful when importing data.
+
+
+
+### overwrite
+
+The first of the options is "overwrite". By default, RevoScaleR functions -
+any function prefixed with "rx" - 
+*will not* modify an XDF file, even if you're using the function
+specifically to make changes to your data. This is to keep you from accidentally
+overwriting or deleting an XDF file that may have taken a long time to write.
+
+The "overwrite" argument, which is set to FALSE by default, controls this
+behavior. When you need to modify an XDF file, you can simply set 
+overwrite to TRUE. For ease of use, the exercises throughout this course
+frequently set overwrite to TRUE; but in practice, you'll want to use overwrite
+only when necessary.
+
+
+### append
+
+There is actually one way to modify an XDF file without overwrite. As I
+mentioned a few minutes ago, the XDF file is designed to allow new data to
+be appended quickly, without overwriting the existing file. If you're
+only appending data - not adding new variables or making other changes to
+the existing records - you use the argument "append" to include your new
+records in the existing XDF file. In this example, I've already got six
+months of data in my XDF file, and I'm appending the seventh. No overwrite
+necessary.
+
+```{r append_rows}
+
+
+```
+
+This is a big help when you're working with large and growing datasets.
+
+
+
+### varsToKeep
+
+The third option, "varsToKeep", lets you limit which columns are read into the
+XDF. Source data often includes variables - sometimes *a lot* of variables - 
+that aren't needed for analysis. At scale, reading in those variables can be a
+serious drag on import times. The varsToKeep argument (and its counterpart
+varsToDrop) can be used to leave all those unnecessary variables behind. As
+you can see in this example, that results in a dramatic speedup:
+
+```{r varsToKeep}
+
+```
+
+Like overwrite and append, varsToKeep is accessible in many RevoScaleR
+functions, so consider using it any time you're working with a stable
+subset of variables. The less your computer reads from the XDF file, the faster
+your script will run.
+
+
+### colClasses and colInfo
+
+Now, in addition to importing fewer variables, you can also speed up your 
+analysis by telling rxImport the *type* of each variable before they're read 
+into the XDF file. If you know the correct types for the variables in your
+dataset - its schema - you can specify them in rxImport and skip the
+additional data manipulation and disk reads you'd need to convert them after
+import.
+
+There are two arguments in rxImport for specifying column details: the first
+is `colClasses`, which lets you control the classes and storage types of your
+variables. If you already have a good sense of what variables a dataset 
+contains and how you'll use those variables, colClasses is a great way to
+get the data type you want right upon import. You can choose from these
+data types:
+
+ - logical
+ - integer (stored as int32)
+ - int16
+ - uint16
+ - numeric (stored as int64)
+ - float32
+ - character
+ - factor
+ - ordered
+ - Date
+ - POSIXct (datetime)
+
+
+
+You'll see all of the familiar R data types in there, but there are a few
+other options, like the sixteen-bit signed and unsigned integers, and 
+32-bit floating-point numbers. These are XDF storage
+types. For the sake of efficiency, different columns with the same type in R - 
+say, two numeric columns - might have different types inside an XDF file
+(perhaps one is a 32-bit float and one is a 64-bit float). You really don't
+need to worry about storage types for normal use - 
+but they're good to know about if you're trying to manually optimize an import.
+
+The argument `colInfo` gives you even more extensive control - 
+you can rename variables, recode factor levels, and set parameters for
+fixed-width text imports.
+
+Passing information for `colInfo` can be a little tricky at first because
+it takes a nested list - each variable I want to modify gets an entry in
+the list I pass to `colinfo`, and each of *those* entries is a list of the
+details. Let's look at an example:
+
+```{r colinfo}
+
+rxImport(inData = mtcars,
+        outFile = xdfPath,
+        colInfo = list(
+            disp = list(newName = "disp_cu_in"),
+            cyl = list(type = "factor",
+                       levels = c("4", "6", "8")),
+            vs = list(newName = "cylinder_config",
+                      levels = c("0", "1"),
+                      newLevels = c("V", "Straight")),
+            am = list(newName = "trans",
+                      levels = c("0", "1"),
+                      newLevels = c("Automatic", "Manual"))
+        )
+)
+
+```
+
+Here I'm working with R's built-in dataset, "mtcars". Some of the variable
+names in mtcars are pretty confusing - what's "vs"? - and some of the
+variables that are stored as numeric data are actually categorical.
+I'd like to fix all that. First, I'll simply rename the engine displacement
+from "disp" to "disp, c, u, in" - so that it's clear that the displacement is
+in cubic inches. Next, I'm going to convert the cylinder count variable to be
+categorical instead of numeric. Next, I'll rework the mysterious "vs"
+variable to be clearer by renaming it from "vs" to "cylinder_config" and
+relabeling its levels from zero and one to "V" and "Straight". And finally,
+I'll do the same for the "am" transmission variable, renaming it to "trans"
+and converting its labels to "Automatic" and "Manual".
+
+colClasses and colInfo won't be all that useful the first time you look at
+a dataset - but when you're ready to put a data process into production,
+they can be very convenient.
+
+
+## Importing from Multiple Files
+
+Another common hurdle in data importation is having data split across
+multiple files. Perhaps you have one data file for each day or month, or one
+for each store in a chain. The speed of appending data to an XDF file means
+that a multi-file import is no problem - although it does need a bit of
+scaffolding.
+
+For example, the mortgage default dataset included with
+your RRE installation is split into ten CSV files - one for each year of data.  
+First, I'll use base R's file system tools to get the full paths of each
+of the CSV files.
+
+```{r list_csv}
+
+# See what files are in the sample data directory:
+list.files(rxGetOption("sampleDataDir"))
+
+mortgage_data_paths <- list.files(rxGetOption("sampleDataDir"),
+                                  pattern = "mortDefaultSmall\\d*.csv",
+                                  full.names = TRUE)
+
+```
+
+I grab the location of the RRE sample datasets using rxGetOption,
+then use the pattern-matching ability of R's list.files function to match
+only the mortgage datasets. I full.names to TRUE, so that I get the full
+path of the files.  That returns a vector of the file paths, which I assign 
+to mortgage_data_paths.
+
+```{r multi_import}
+
+# Loop over the paths and read into an XDF file at this location:
+mortgage_xdf <- "mortgage2000_2009.xdf"
+
+lapply(mortgage_data_paths, FUN = function(x) {
+  rxImport(inData = x,
+          outFile = mortgage_xdf,
+          append = file.exists(mortgage_xdf))
+  }
+)
+
+rxGetInfo(mortgage_xdf)
+
+```
+
+Next, I make a pointer for where I'd like to create the combined XDF file,
+and then use lapply to loop over the list of CSV file paths, reading
+each one in after the other.
+
+This approach combining lapply and rxImport
+is very similar to what you'd do in Open-Source R with lapply and rbind,
+but there is one twist: rxImport *won't* create a new XDF if append is set to
+TRUE, so I have to use a little trick to make sure that append is set to
+FALSE for the first dataset, and TRUE for all the rest. I use the
+function file.exists, which returns a FALSE for the first dataset
+because the XDF file hasn't been created yet, and then,
+after the first dataset is converted to XDF, returns a TRUE for the rest.
+
+That's all it takes to combine multiple CSVs in one XDF file.
+
+
+
+## Data Sources, SAS, and SPSS
+
+Now so far, all of these examples and exercises have worked with CSV files - but
+importing from other sources, like SAS and SPSS files, works exactly the
+same way. Just give rxImport the path to your SAS or SPSS file.
+
+In order to work with all these different formats, rxImport actually creates a
+format-specific "data source" object behind the scenes. 
+That data source object provides a wide variety of
+sensible configuration defaults for reading in the source data. For example,
+the data source for a text file includes configuration options for the 
+delimiter, the escape character used for quotes, options for number and date
+formatting, and so on. A SAS data source includes options for pointing to
+a related catalog file and managing missing values.
+
+[slide with args for RxTextSource and list of data source generators]
+
+Most of the time, you should have no trouble importing your data by just
+giving rxImport the path to your source file. But if your imported variables
+are incorrectly formatted or missing values aren't recognized, it's a good
+idea to check out the options available to you in the appropriate data source 
+function.
+
+
+
+## Conclusion
+
+Thanks for joining me for this tutorial on importing data into Revolution
+R Enterprise. I hope it's been useful for you. If you often work with
+relational databases, be sure to check out our tutorial for using ODBC to
+import data. 
+
+Take care and see you next time.
+
+
+
+```{r cleanup, echo = FALSE, results = 'hide'}
+
+# Delete the mortgage XDF
+file.remove(mortgage_xdf)
+
+
+
+
+```

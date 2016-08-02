@@ -1,0 +1,128 @@
+---
+title: 'Sorting and Deduplication'
+author: 'Revolution Analytics'
+knit: "RevoKnitR::rx_compile_rmd"
+header-icons: 
+  - "REV_Icon_Consulting_RGB"
+  - "REV_Icon_TrainingServices_RGB"
+toc: TRUE
+---
+
+## Sorting
+
+```{r setup, echo=TRUE}
+xdfSource <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+rxDataStep(xdfSource, numRows = 10)
+```
+
+## Sorting
+```{r simplesort, echo=TRUE}
+# A output file for the sorted data
+xdfSorted <- tempfile(fileext = ".xdf")
+
+rxSort(inData = xdfSource,
+       outFile = xdfSorted,
+       sortByVars = "creditScore"
+)
+
+rxDataStep(xdfSorted, numRows = 10)
+```
+
+## Descending Order
+```{r descend, echo=TRUE}
+xdfSorted <- tempfile(fileext = ".xdf")
+
+rxSort(inData = xdfSource,
+       outFile = xdfSorted,
+       sortByVars = "creditScore",
+       decreasing = TRUE,
+       overwrite = TRUE
+)
+
+rxDataStep(xdfSorted, numRows = 10)
+```
+
+## Multi-Variable Sorts
+```{r multisort, echo=TRUE}
+rxSort(inData = xdfSource,
+       outFile = xdfSorted,
+       sortByVars = c("creditScore", "yearsEmploy"),
+       overwrite = TRUE
+)
+
+rxDataStep(xdfSorted, numRows = 10)
+
+```
+
+## Decreasing with Multi-Variable Sorts
+```{r multisortdecrease, echo=TRUE}
+rxSort(inData = xdfSource,
+       outFile = xdfSorted,
+       sortByVars = c("creditScore", "yearsEmploy"),
+       decreasing = TRUE,
+       overwrite = TRUE
+)
+
+rxDataStep(xdfSorted, numRows = 18)
+
+```
+
+## Ascending and Descending Sorts
+```{r multisortmultidirection, echo=TRUE}
+rxSort(inData = xdfSource,
+       outFile = xdfSorted,
+       sortByVars = c("yearsEmploy", "creditScore"),
+       decreasing = c(FALSE, TRUE),
+       overwrite = TRUE
+)
+
+rxDataStep(xdfSorted, numRows = 18)
+
+```
+
+## Deduplication
+```{r removedupkeys, echo=TRUE}
+xdfNoDup <- tempfile(fileext = ".xdf")
+
+rxSort(inData = xdfSource,
+       outFile = xdfNoDup,
+       sortByVars = "default",
+       removeDupKeys = TRUE
+)
+
+
+rxDataStep(xdfNoDup)
+
+```
+
+## Deduplication - "overwite""
+```{r overwrite, echo=TRUE}
+rxSort(inData = xdfSource,
+       outFile = xdfNoDup,
+       sortByVars = "year",
+       removeDupKeys = TRUE,
+       overwrite = TRUE
+)
+
+rxDataStep(xdfNoDup)
+
+```
+
+## Deduplication - "dupFreqVar"
+```{r dupfreqvar, echo=TRUE}
+rxSort(inData = xdfSource,
+       outFile = xdfNoDup,
+       sortByVars = "year",
+       removeDupKeys = TRUE,
+       dupFreqVar = "freq",
+       overwrite = TRUE
+)
+
+rxDataStep(xdfNoDup)
+
+```
+
+
+
+

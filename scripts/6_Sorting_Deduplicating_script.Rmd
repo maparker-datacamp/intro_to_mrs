@@ -1,0 +1,298 @@
+
+
+```{r setup, echo = FALSE}
+
+rxOptions(reportProgress = 0)
+
+
+```
+
+
+
+# Data Management with RRE:
+# Sorting and Deduplicating Datasets
+
+## Intro
+
+Welcome back to Data Management with Revolution R Enterprise. Most of the time
+when we're working with big data, it's a good idea to move the data as little
+as possible. The XDF file format is designed to make that easier by allowing
+chunks of data to be quickly read and distributed for computations, and allowing
+new data to be appended to an existing XDF without requiring a re-write of the
+whole file. 
+
+But sometimes there's no good way to avoid rearranging the entire dataset. 
+For example, in our session on advanced transformations, we created a lagged
+variable that required the entire dataset to be in chronological order.
+
+Merging datasets also requires sorting them. The RRE function for merging
+datasets will sort them for you automatically, but if you're planning to merge
+multiple datasets together, it can be a tremendous time-saver to do all of the
+sorting upfront.
+
+Finally, removing duplicate records from a dataset also typically involves 
+sorting the data first.
+
+In RRE, sorting and deduplication are all handled by the same function: 
+`rxSort`. In this session, we'll cover how to use `rxSort` for all of these
+scenarios.
+
+
+
+
+## Sorting
+
+First, let's take a look at our example data. This is mortgage default data
+covering ten years from 2000 to 2009. It's already sorted by year, but we'll
+mix that up in a second.
+
+
+```{r load_data}
+
+xdfSource <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+rxDataStep(xdfSource, numRows = 10)
+
+```
+
+Now, let's try out `rxSort` for a single variable. The syntax is quite simple:
+I just indicate my source data file, the path where I'd like to save the
+sorted data, and the name of the variable I'd like to sort on, which I pass to
+the argument `sortByVars`.
+
+```{r single_sort}
+
+# A output file for the sorted data
+xdfSorted <- tempfile(fileext = ".xdf")
+
+rxSort(inData = xdfSource,
+       outFile = xdfSorted,
+       sortByVars = "creditScore"
+)
+
+rxDataStep(xdfSorted, numRows = 10)
+
+```
+
+As you can see, `rxSort` sorts in ascending order by default. But it's simple
+to sort in *descending* order by setting the argument `decreasing` to TRUE.
+
+
+```{r single_desc}
+
+rxSort(inData = xdfSource,
+       outFile = xdfSorted,
+       sortByVars = "creditScore",
+       decreasing = TRUE,
+       overwrite = TRUE
+)
+
+rxDataStep(xdfSorted, numRows = 10)
+
+```
+
+
+
+### Multi-Variable Sorts
+
+To sort on two or more variables, just name additional variables in 
+`sortByVars` by creating a character vector.
+This code will sort by `creditScore` first, and then by
+`yearsEmploy` any time there's more than one record with the same credit score.
+
+```{r multi_sort}
+
+rxSort(inData = xdfSource,
+       outFile = xdfSorted,
+       sortByVars = c("creditScore", "yearsEmploy"),
+       overwrite = TRUE
+)
+
+rxDataStep(xdfSorted, numRows = 10)
+
+```
+
+When we're sorting multiple variables at once, setting `decreasing` to TRUE
+will cause all of the sorting variables variables to be sorted in decreasing
+order.
+
+
+```{r multi_desc}
+
+rxSort(inData = xdfSource,
+       outFile = xdfSorted,
+       sortByVars = c("creditScore", "yearsEmploy"),
+       decreasing = TRUE,
+       overwrite = TRUE
+)
+
+rxDataStep(xdfSorted, numRows = 18)
+
+```
+
+But it's quite common to need to sort ascending on one variable, and descending
+on another. To do that, pass a vector of TRUE and FALSE to `decreasing` that's
+the same length as the vector you pass to `sortByVars`.
+For example, if I wanted to know the highest `creditScore` for
+someone with no employment history, I could sort with ascending years of
+employment and descending credit score. Since I want my first variable to
+ascend and my second to descend, the first value I give to `decreasing` is
+FALSE, and the second is TRUE.
+
+
+```{r multi_mixed}
+
+rxSort(inData = xdfSource,
+       outFile = xdfSorted,
+       sortByVars = c("yearsEmploy", "creditScore"),
+       decreasing = c(FALSE, TRUE),
+       overwrite = TRUE
+)
+
+rxDataStep(xdfSorted, numRows = 18)
+
+```
+
+Wow - credit scores over 800 with no employment history; must be nice!
+In practice, I'd actually use `rxSummary` to answer this question - but it's 
+a good illustration of `rxSort`'s flexibility. 
+
+
+
+## Deduplication
+
+Besides sorting datasets, `rxSort` is also the function to turn to when you
+need to remove duplicate records from a dataset. When we set the argument
+`remove dupe keys` to TRUE, `rxSort` will keep only the first record for
+each unique combination of the sorting variables. 
+
+
+```{r default_nodup}
+
+xdfNoDup <- tempfile(fileext = ".xdf")
+
+rxSort(inData = xdfSource,
+       outFile = xdfNoDup,
+       sortByVars = "default",
+       removeDupKeys = TRUE
+)
+
+
+rxDataStep(xdfNoDup)
+
+
+```
+
+In this example, my "key" is the default variable, which only has two unique
+values - zero and one. Accordingly, I only get two rows back: the very first
+zero encountered, and the very first one. All of the other records had values
+of default that duplicated these - so they were removed. If we try the same
+thing with the year variable, we get ten records - the first from each year.
+
+
+
+```{r year_nodup}
+
+rxSort(inData = xdfSource,
+       outFile = xdfNoDup,
+       sortByVars = "year",
+       removeDupKeys = TRUE,
+       overwrite = TRUE
+)
+
+rxDataStep(xdfNoDup)
+
+```
+
+
+If we add a second variable to `sortByVars`, `rxSort` will return the first
+record for each unique combination of values. Since I have two unique values
+in default and ten unique values in year, I get a total of twenty records back.
+
+```{r double_nodup}
+
+rxSort(inData = xdfSource,
+       outFile = xdfNoDup,
+       sortByVars = c("default", "year"),
+       removeDupKeys = TRUE,
+       overwrite = TRUE
+)
+
+rxDataStep(xdfNoDup)
+
+```
+
+Sometimes it can be useful to know how many records have been removed. For
+example, if you're subsetting to the latest activity record for a customer, you
+might also want to know how many activity records that customer has in total.
+If so, you can use the "dupe freq var" argument to name a column that will
+contain those counts. You can name the column whatever you like, but "frequency"
+makes a reasonable default.
+
+```{r dup_freq}
+
+rxSort(inData = xdfSource,
+       outFile = xdfNoDup,
+       sortByVars = "year",
+       removeDupKeys = TRUE,
+       dupFreqVar = "freq",
+       overwrite = TRUE
+)
+
+rxDataStep(xdfNoDup)
+
+```
+
+This output is actually quite similar to that of the function `rxCube`, which
+we discussed in an earlier session, with one big exception: the output of 
+`rxSort` includes *all* of the variables of the selected records, whereas
+`rxCube` returns only the key and the count.
+
+```{r cube}
+
+rxCube( ~ F(year), data = xdfSource)
+
+```
+
+In most situations, the two functions take about the same amount of time, so 
+you can use whichever has the most convenient output.
+
+
+
+### Other Arguments
+
+`rxSort` takes two other arguments that you should know about:
+
+`missingsLow` specifies whether a missing value should be counted as the
+highest value in a sort order, or the lowest. It defaults to TRUE, which means
+that in our previous examples, any person with a missing creditScore would
+be sorted as if they had the lowest credit score.
+
+If you're sorting on a character variable, you can also choose whether `rxSort`
+should be case-sensitive in its sorting using the `caseSensitive`
+argument. By default, `caseSensitive` is set to FALSE - which means that a
+capital "A" and a lower-case "A" would have the same sort order.
+
+Be careful, though - it's easy to mistake a factor variable for a character 
+if you haven't actually checked the data types.
+Factors will always sort based on the order of their levels, not the text of 
+their labels. So if you find yourself getting strange results when sorting
+a variable, check to make sure it isn't a factor.
+
+Conversely, if you *need* a variable to sort in a non-standard way, make it a
+factor! That's what they're for.
+
+
+
+## Conclusion
+
+That's all for this session. While the best strategy for sorting is to simply 
+avoid it, hopefully you now feel well-equipped to handle whatever sorting and 
+deduplication tasks that come your way.
+
+Thanks, and see you next time.
+
+
+
+
+

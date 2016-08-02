@@ -1,0 +1,662 @@
+
+
+
+# Data Management with RRE:    
+# Advanced Transformations
+
+
+## Intro
+
+ In the session on simple transforms, we learned how to 
+
+ - perform simple transformations with rxDataStep,
+ - use criteria to subset an XDF file with the rowSelection argument,
+ - drop variables from an XDF file, and
+ - create simple factors. 
+
+In this session, we'll look at how to perform more advanced transformations. 
+
+So what makes one transformation "simple" and another
+"advanced"? The simplest transformations are those that can be calculated
+without referring to any other value in your dataset - transformations like
+logging or exponentiating a variable. Transformations get more advanced as
+they start to depend on other values, like the scaling example in the last
+session: we had to calculate the minimum and maximum of our variable separately
+using rxGetInfo, and then pass those values to rxDataStep using the
+transformObjects argument. You'd use the same process to create a mean-centered
+variable. In these transformations, each value depends on one or two global
+statistics - the min, max, or mean of the entire dataset. In distributed
+computing, we have to assume that only part of the data is available at any
+one moment - so values like these that depend on all of the data have to be
+calculated separately and sent to each node.
+
+An even more complex kind of transformation is one in which each value depends 
+on another specific value in the dataset. Lagging a variable is a great example
+of this. If we want to predict Tuesday's high temperature with Monday's high,
+we've got to get Monday's high into Tuesday's record - we want to shift that
+entire variable down one row. In RRE, that means that we have to figure out
+how to communicate across chunks - how to send the last value of our first
+chunk to become the first value in our second. We'll cover exactly how to do
+that in this session of Data Management for Revolution R Enterprise.
+
+
+
+## Scaling Multiple Variables
+
+Let's start off with something familiar. In the last session, we scaled a
+variable so that its maximum value was mapped to one, and its minimum value
+was mapped to zero. Let's revisit that transformation. First, we'll import
+some sample data - this is the same Dow Jones Industrial Average dataset
+we used in the Simple Transformations session.
+
+
+```{r import}
+
+# First, set up pointers to the source XDF file
+sourcePath <- file.path(rxGetOption("sampleDataDir"), "DJIAdaily.xdf")
+
+# And a temporary file
+xdfPath <- tempfile(fileext = ".xdf")
+
+# Import from the source file to our temporary one,
+# drop some variables, convert Date to a Date
+rxDataStep(inData = sourcePath,
+           outFile = xdfPath,
+           transforms = list(Date = as.Date(Date)),
+#            varsToDrop = c("Year", "Month", "DayOfMOnth",
+#                           "DaysSince1928", "YearFrac"),
+           overwrite = TRUE
+)
+
+# Check it out
+rxGetInfo(xdfPath, getVarInfo = TRUE)
+rxDataStep(xdfPath, numRows = 10)
+
+
+```
+
+
+
+
+Now, let's take a look at the code we used to scale the Volume variable:
+
+```{r scale_one}
+
+# Calculate the minimum and maximum
+volumeMin <- rxGetInfo(xdfPath, getVarInfo = TRUE)$varInfo$Volume$low
+volumeMax <- rxGetInfo(xdfPath, getVarInfo = TRUE)$varInfo$Volume$high
+
+
+# Make the transformation (and drop a few variables, too)
+rxDataStep(inData = xdfPath, 
+           outFile = xdfPath,
+           varsToKeep = c("Date", "Open", "High", "Low", "Close", "Volume"),
+           transformObjects = list(volumeMin = volumeMin, 
+                                   volumeMax = volumeMax),
+           transforms = list(VolumeScaled = 
+               (Volume - volumeMin) / (volumeMax - volumeMin)),
+           overwrite = TRUE
+)
+
+
+# Check the results
+rxDataStep(xdfPath, numRows = 10)
+
+```
+
+First, we extract the minimum and maximum values of Volume using rxGetInfo.
+Then, we pass those two values to rxDataStep using the transformObjects
+argument. Because these computations might be happening on different nodes,
+we have to let rxDataStep know that it needs to push these objects - 
+volumeMin and volumeMax - out to all of the nodes being used.
+Finally, we use the transforms argument to calculate the scaled Volume variable.
+
+What if we wanted to perform this same operation on several variables? For
+some kinds of analysis, putting all of the variables on the same scale can
+make interpretation a lot easier. A straightforward way to do that would be
+to simply repeat the process we used on Volume for all of the other variables
+we want to scale. That could get pretty tedious, though, and if we found
+any errors in our code, we'd have to hunt down and fix that error in every
+place it appeared.
+
+A better approach is to create a function. Writing a function comes with a lot
+of benefits: it saves you a lot of typing, reduces the possibility of making
+an error when you repeat a process, and lets you fix any bugs you find in
+a single place. With functions, that fix will automatically be applied
+anywhere the function is used. On the other hand, it can take a bit of work
+up-front to get a function working just right.
+
+
+```{r scale_many}
+
+scaleVars <- function(dataList) {
+
+    # The variables we want to scale are now elements in dataList. 
+    # Loop over the *names*, not the variables themselves.
+    for(i in names(dataList)) {
+
+        # For each variable "price", create a new variable "priceScaled"
+        dataList[[paste0(i, "Scaled")]] <- 
+
+            # Both dataList and varInfo can be indexed by the variable's
+            # name, represented here as i
+            (dataList[[i]] - varInfo[[i]]$low) / (varInfo[[i]]$high - varInfo[[i]]$low)
+
+    }
+
+    # Return dataList with the new scaled variables
+    dataList
+
+} 
+
+```
+
+First, let's create the scaling function. All of the variables we name in 
+transformVars will be elements in a list that's passed to our transformFunc. 
+I'm going to refer to that list as "dataList" in my function. dataList is
+the only argument that this function takes.
+
+Now, rather than iterating over each variable in dataList and scaling it,
+I'm going to iterate over their *names*. I do that for two reasons:
+
+ - First, it makes it easier to create a new variable name for the scaled 
+   version of the variable; I can just append the word "Scaled" onto the 
+   end of the original variable name.
+ - Second, it makes it easy to access each variable's minimum and maximum
+   values, which are stored in the varInfo object. I'll show you how I
+   created varInfo in just a minute.
+
+To iterate over the names, I'm going to use a for-loop to step through each
+of the names of the dataList object, one at a time. I'm using the letter i
+as a stand-in for the variable name I'm working with on a particular iteration.
+Because i is just a character vector with the variable's name,
+I can then use it to extract that variable from dataList, and also to get its 
+minimum and maximum variables from my varInfo object.
+
+Then I scale that variable using the same expression as before, and assign
+it to a new element in dataList. For example, if I'm scaling the variable
+"Open", the scaled version will be stored in dataList as "OpenScaled".
+
+Finally, I return dataList. It now includes the original variables
+as well as their scaled equivalents, which will be added to the dataset.
+
+This is definitely more complicated than just using the transforms
+argument, but it's much more powerful. I can use this function to scale
+any number of variables - hundreds, thousands - without needing to calculate
+the minimum and maximum of each, and without needing to write a transforms
+line for each. Let's look at how to actually use that function in rxDataStep.
+
+
+```{r use_scaleVars}
+
+# Here, I'm calculating all of the mins and maxes of the variables
+DJinfo <- rxGetVarInfo(xdfPath)
+
+
+# Use rxDataStep to apply the scaleVars function
+rxDataStep(inData = xdfPath,
+           outFile = xdfPath,
+           transformFunc = scaleVars,
+           transformVars = c("Open", "High", "Low", "Close"),
+           transformObjects = list(varInfo = DJinfo),
+           overwrite = TRUE
+)
+
+# Checking for success
+rxDataStep(xdfPath, numRows = 5)
+
+
+```
+
+First, I need to know the minimum and maximum for each of the variables.
+I can easily retrieve these numbers using rxGetVarInfo, which is very similar
+to the rxGetInfo function we've used throughout these sessions. rxGetVarInfo
+tells me the type of each variable and, for numeric variables, the min and max
+values.
+
+Finally, I use rxDataStep to apply the scaleVars function. It takes three
+arguments to make sure rxDataStep has all of the information it needs:
+
+ - the argument transform*Func* gets the scaleVars function
+ - the argument transform*Vars* gets a vector that names the variables we
+   want to scale
+ - and finally, the argument transform*Objects* gets DJinfo, which contains
+   the variable info we just calculated. You might remember that 
+    transformObjects takes a named list; this is where I rename DJinfo to the 
+    more-generic varInfo, which is what the scaleVars function needs to work.
+
+As you can see, each of the variables now has a scaled equivalent - and I've
+now got a function that I can use to scale variables in all of my analyses. In
+the long run, creating functions can save you a lot of time.
+
+
+## Lagging
+
+Let's take a look at another common transformation for stock market data.
+The most intuitive predictor for the value of today's Dow Jones is yesterday's.
+In order to make yesterday's value available to today's record, we need to
+create what's called a lagged value.
+
+When we scaled variables in the previous examples, we were performing a
+transformation that depended on *all* of the values of a particular variable.
+We had to know the global min and max of that variable, but because rxDataStep
+usually only sees one chunk of data at a time, we had calculate those global
+stats outside of rxDataStep.
+
+Lagging a variable is tricky in a different way. Each record depends on the
+value of the record before it - the third value needs access to the second
+value, the fourth needs access to the third, and so on. Because rxDataStep
+can only see one chunk at a time, every boundary between chunks will result
+in a missing value, because the first record in each chunk can't look back 
+at the previous value. Let me show you what I mean.
+
+```{r naive_lag}
+
+# Generate some sample data
+lagTest <- data.frame(date = seq(as.Date("2015-01-01"), 
+                                 by = "1 day",
+                                 length.out = 12),
+                      Price = 1:12)
+
+
+# Import to an XDF with four chunks
+lagTestXdf <- tempfile(fileext = ".xdf")
+
+for(i in c(1, 4, 7, 10)) {
+    rxImport(inData = lagTest[i:(i + 2), ],
+             outFile = lagTestXdf,
+             append = file.exists(lagTestXdf))
+}
+
+
+
+# Lagging without accounting for chunk boundaries.
+# I'll use .rxChunkNum to show which values belong to which chunks.
+rxDataStep(inData = lagTestXdf,
+           transforms = list(
+               chunk_id = rep(.rxChunkNum, times = .rxNumRows),
+               PriceLagged = c(NA, Price[-length(Price)])
+           )
+)
+
+
+```
+
+In this example, I'm forcing an XDF file with twelve rows to have four chunks.
+Then I shift the values of the price variable down one row by inserting an NA 
+right before its first value, and dropping its last value.
+
+As you can see, the first value of every chunk is now an NA. It makes sense for
+the very first value to be NA - there's no value prior to the first value - 
+but it shouldn't happen beyond that. In this setup, however, the chunks have
+no way to get that dropped last value from the previous chunk, so they end up
+with missing values that could seriously compromise an analysis.
+
+Fortunately, RRE has tools that enable chunks to communicate with each other.
+Let's take a look at what a lagging function would look like in RRE.
+
+
+```{r lag_func}
+
+lagVar <- function(dataList) { 
+
+    # Is this the first row in the entire dataset?
+    if(.rxStartRow == 1) {
+
+        # If so, the first value should be NA, followed by the rest of
+        # the values; drop the last value
+        dataList[[newName]] <- c(NA, dataList[[varToLag]][-.rxNumRows]) 
+
+    } else {
+
+        # Otherwise, get the last value from the previous chunk,
+        # followed by the rest of the values; drop the last value
+        dataList[[newName]] <- c(.rxGet("lastValue"),
+                                 dataList[[varToLag]][-.rxNumRows]) 
+
+    }
+
+    # Make the last value available for the next chunk
+    .rxSet("lastValue", dataList[[varToLag]][.rxNumRows])
+
+    # Return dataList with the new variable
+    dataList
+
+}
+
+
+```
+
+The first value of a lagged variable will always be missing because there's
+no past data to draw on. So the first thing we need to know to compute a lagged
+value for a particular chunk is: is this the very first chunk?
+
+Dot rxStartRow returns the overall row number of the first row in this
+chunk. If dot rxStartRow is one, we know we're working with the first chunk in
+the entire dataset, and the first value is NA.
+
+So we put the NA out front, then shift all the other values down one row.
+newName is the desired name of the lagged variable, which I'll set using
+transformObjects in just a minute.
+
+If this isn't the very first chunk, we have to fetch the previous
+value from the previous chunk. To do that, we use the special function dot rxGet,
+which retrieves the value of an object called "lastValue" and an inserts that
+as the first value.
+
+But that lastValue object doesn't just come from nowhere - we have to set it,
+and so the last step of the process - whether this is the first chunk, the
+last, or anything in between - is to take that dropped last value and assign
+it to "lastValue" using dot rxSet.
+
+Now that we've got the function defined, we can use it on our data.
+
+
+
+```{r lag}
+
+# Sort the dataset chronologically - otherwise, the lagging will be random.
+rxSort(inData = lagTestXdf,
+       outFile = lagTestXdf,
+       sortByVars = "date",
+       overwrite = TRUE)
+
+# Finally, put the lagging function to use:
+rxDataStep(inData = lagTestXdf, 
+           transformObjects = list(
+               varToLag = "Price", 
+               newName = "previousPrice"), 
+           transformFunc = lagVar
+)
+
+
+```
+
+First, we have to sort the data to make sure the records are in chronological
+order. Then, we can use rxDataStep to apply our lagging function. It needs two
+pieces of information: the name of the variable that we want to lag, Price, and
+the name that we'd like to call the lagged variable - previousPrice. We can
+pass these two pieces of information using the transformObjects argument.
+
+As you can see from the results, this works! The only NA is the very first
+value - just as expected. Creating lagged variables is the most common
+situation in which you'll need to pass information between chunks of your data,
+but it's certainly not the only one. 
+
+
+
+## Lagging By Merging
+
+It's crucial to understand how the chunk-wise computations used by rxDataStep
+can lead to incorrect results and missing data. rxGet and rxSet are the most
+powerful tools for overcoming this limitation, but they're a little
+cumbersome. Creative thinking can reveal simpler ways to achieve the same 
+results.
+
+
+
+```{r merge_lag}
+
+lagTestXdf2 <- tempfile(fileext = ".xdf")
+
+rxDataStep(inData = lagTestXdf,
+           outFile = lagTestXdf2,
+           transforms = list(date = date + 1),
+           overwrite = TRUE
+)
+
+
+rxMerge(inData1 = lagTestXdf,
+        inData2 = lagTestXdf2,
+        matchVars = "date",
+        type = "left",
+        duplicateVarExt = c("", "Lagged")
+)
+
+
+
+
+```
+
+Here's an alternative to using a function for lagging a variable: merging.
+Rather than making a copy of the variable and shifting it down, I can
+create a second copy of the data, simply add one to the date, and then
+merge it back onto the original dataset, using the adjusted date as the key.
+
+This approach is definitely easier to code, and it would be trivial to create
+two-day lags, three-day lags, and so on. The downside is that it takes two
+to three times longer to run than the function does. As is often the case
+in big data processes, there's a trade-off to be made between how quickly the
+process runs and how much time it takes to write the code.
+
+
+
+
+## Factors
+
+There's one more common scenario in which the values needed for a 
+transformation are spread across multiple chunks: creating factors. 
+As I mentioned in the previous session, it's no problem to create simple factors
+using rxDataStep and the transforms argument.
+
+```{r simple_factor}
+
+rxDataStep(inData = xdfPath,
+           outFile = xdfPath,
+           transforms = list(
+               DayOfWeekFactor = factor(DayOfWeek,
+                                        levels = c("Monday", "Tuesday",
+                                                   "Wednesday", "Thursday",
+                                                   "Friday"))),
+           overwrite = TRUE
+)
+
+```
+
+In this case, I've specified all of the levels of the factor right inside
+of rxDataStep - so it doesn't need to know all of the values of DayOfWeek
+in order to create factors that can be combined. But what if you had dozens
+or hundreds of levels? What if they changed regularly? It would be really
+tedious to maintain a list of levels for anything more complex than days of
+the week or months of the year. That's where rxFactors comes in.
+
+rxFactors provides all the functionality you need to work with factors across
+chunks. You can use it to create and recode factors as simply as you would
+in open-source R.
+
+First, let's create a factor. In this case, I'm just going to extract the
+year from the Dow Jones Industrial Average data and convert that into a factor.
+
+
+
+```{r create_factor}
+
+# First, I'm going to scramble the Dow Jones dataset, so that we can see
+# how the order of values affects the order of levels
+rxSort(inData = xdfPath, 
+       outFile = xdfPath,
+       sortByVars = "Volume",
+       overwrite = TRUE)
+
+# Next, extract Year from Date
+rxDataStep(inData = xdfPath,
+           outFile = xdfPath,
+           transforms = list(charYear = substr(Date, 1, 4)),
+           overwrite = TRUE)
+
+rxFactors(inData = xdfPath,
+          outFile = xdfPath,
+          factorInfo = list(
+              factorYear = list(varName = "charYear")
+          ),
+          overwrite = TRUE
+)
+
+
+rxCube(Open ~ factorYear, data = xdfPath)
+
+```
+
+
+First, I'm going to sort the Dow Jones data by Volume instead of Date, just so 
+it isn't in chronological order - that way we can see how sorting factor 
+levels works later.
+
+Next, I use rxDataStep and R's substring function to extract the year from the 
+date into a new variable called charYear; it's just the first four characters.
+
+Finally, I use rxFactors to turn that extracted year into a factor.
+The key argument in rxFactors is the factorInfo argument. Just like transforms
+in rxDataStep, rxFactors takes a named list, with one element for each
+factor you want to manipulate. In this case, I'm creating a new factor called
+factorYear. Each element in the factorInfo list takes its *own* list of
+information about the factor. This second list can contain information about
+the levels the factor should have, what order those levels should be in,
+instructions for combining levels, and so on. In this case, however, I just
+need the varName argument, which I use to tell rxFactors that I want to create
+a factor out of my charYear variable.
+
+A quick way to check if this worked is to use the summary function rxCube,
+which calculates the average opening price for each year. It's almost as you
+would expect - except that the years aren't in chronological order. That's
+because the levels are set in the same order that rxFactors finds them. In this
+case, the 1940s were seen first, so they appear at the top of the results.
+
+We can use rxFactors to both sort the levels of a new factor and to change
+the sort order of an existing factor. For simple alphabetical sorting,
+that's as easy as adding a new argument to our factorInfo list. 
+
+
+```{r sort_factor}
+
+rxFactors(inData = xdfPath,
+          outFile = xdfPath,
+          factorInfo = list(
+              factorYear = list(varName = "charYear",
+                                sortLevels = TRUE)
+          ),
+          overwrite = TRUE
+)
+
+rxCube(Open ~ factorYear, data = xdfPath)
+
+```
+
+You can see that I've added a new piece of information to factorYear.
+Because I've specified sortLevels to be TRUE, rxFactors will automatically
+sort the levels in ascending order.
+
+If I want to set the factor levels to a custom order, all I need to do is
+pass those levels to factorInfo. Imagine that for some strange reason I
+wanted to have all of my even years first, followed by the odd years. To do
+that, I'd just have to create a character vector with the even years
+followed by the odd, then pass that to factorYear, like this:
+
+```{r custom_order}
+
+even_odd <- as.character(c(seq(1928, 2010, by = 2), seq(1929, 2009, by = 2)))
+
+rxFactors(inData = xdfPath,
+          outFile = xdfPath,
+          factorInfo = list(
+              factorYear = list(newLevels = even_odd)
+          ),
+          overwrite = TRUE
+)
+
+rxCube(Open ~ factorYear, data = xdfPath)
+
+```
+
+You can see from the rxCube results that all the even years have been pulled
+to the top.
+
+So - we've seen how to create and sort factors. Another common operation is
+to combine levels in a factor. Maybe you want to create a factor that
+indicates whether a particular day of the week falls on the weekend; you
+could do that by combining Monday through Friday into one factor level and
+Saturday-Sunday into another.
+
+There are two key arguments in factorInfo that will help you do this.
+The first is newLevels. newLevels lets you assign existing factor levels
+to new levels using a named list. If you create a new level for each old
+level, this simply renames the levels - but you can easily assign 
+multiple old levels to a single new level to consolidate them.
+
+```{r recode_newlevels}
+
+rxFactors(inData = xdfPath,
+          outFile = xdfPath,
+          factorInfo = list(
+              factorYear = list(newLevels = even_odd),
+              DayCombined = list(newLevels = list(Monday = "Monday",
+                                                  Midweek = "Tuesday",
+                                                  Midweek = "Wednesday",
+                                                  Midweek = "Thursday",
+                                                  Friday = "Friday"),
+                                 varName = "DayOfWeek")
+          ),
+          overwrite = TRUE
+)
+
+rxCube(Open ~ DayCombined, data = xdfPath)
+
+```
+
+Here, I'm assign Tuesday, Wednesday, and Thursday to the same new level,
+"Midweek", while letting Monday and Friday keep their original values.
+
+That can get a little cumbersome with a lot of levels, though. If you have
+have many levels you want to combine into one, the otherLevel function
+can be a great time-saver.
+
+```{r recode_otherlevel}
+
+
+rxFactors(inData = xdfPath,
+          outFile = xdfPath,
+          factorInfo = list(
+              factorYear = list(newLevels = even_odd),
+              DayCombined = list(newLevels = list(Monday = "Monday",
+                                                  Friday = "Friday"),
+                                 otherLevel = "Midweek",
+                                 varName = "DayOfWeek")
+          ),
+          overwrite = TRUE
+)
+
+rxCube(Open ~ DayCombined, data = xdfPath)
+
+```
+
+I specify Monday and Friday in newLevels as before, but instead of
+individually recoding Tuesday, Wednesday, and Thursday, I just leave them
+out of the newLevels argument. Instead, I set the otherLevel argument
+to "Midweek". Any level that isn't assigned a newLevel will be automatically
+assigned to otherLevel.
+
+There's one subtle difference between these two methods: when I individually
+assigned the Midweek levels, Midweek became the second level in this factor;
+when I assigned those levels using otherLevels, it was the last. otherLevel
+will always end up being the last level in the factor.
+
+
+## Conclusion
+
+In this session, we've covered the essential tools for performing data
+transformations that depend on values that are split across chunks.  
+You should now have a sense of 
+how to create functions for transforming multiple variables at once,
+how to use rxGet and rxSet to pass results between chunks, and
+how to use rxFactors to safely create and modify factors.
+Above all, I hope I've demonstrated how important it is to carefully consider
+if the transformation you're applying will work on chunked data.
+
+Thankfully, the majority of functions in Revolution R Enterprise work on
+chunked data without any special consideration. In the next session, we'll
+cover functions for summarizing your data, including descriptive statistics,
+crosstabs, and more.
+
+Take care and see you next time.
+
+

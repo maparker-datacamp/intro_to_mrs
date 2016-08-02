@@ -1,0 +1,368 @@
+---
+title: 'Summary Statistics Slides'
+output: pdf_document
+toc: FALSE
+knit: "RevoKnitR::rx_compile_rmd"
+navigation-symbols: FALSE
+aspect-ratio: 169
+number-frames: FALSE
+---
+
+
+```{r setup, include = FALSE}
+
+
+rxOptions(reportProgress=0)
+
+library(ggplot2)
+
+theme_set(theme_bw())
+
+opts_chunk$set(tidy = FALSE,
+               cache = FALSE,
+               output.max = 15
+)
+
+set.seed(42)
+
+```
+
+
+
+## Summarize Credit Score
+
+```{r summarize_one, output.max = 15, eval = FALSE, tidy = FALSE}
+# Create a pointer to one of RRE's sample XDFs
+defaultData <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+# Summarize credit score
+rxSummary(~ creditScore, data = defaultData)
+```
+
+```{r summarize_one_output, echo = FALSE, tidy = FALSE}
+defaultData <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+rxSummary(~ creditScore, data = defaultData)$sDataFrame
+```
+
+
+## Summarize Two Variables
+```{r summarize_two, eval = FALSE, tidy = FALSE}
+
+rxSummary( ~ creditScore + ccDebt, data = defaultData)
+
+```
+
+```{r summarize_two_output, echo = FALSE, tidy = FALSE}
+
+rxSummary( ~ creditScore + ccDebt, data = defaultData)$sDataFrame
+
+```
+
+
+## Summarize All Variables
+```{r summarize_all, eval = FALSE, tidy = FALSE}
+
+rxSummary( ~ ., data = defaultData)
+
+```
+
+```{r summarize_all_output, echo = FALSE, tidy = FALSE}
+
+rxSummary( ~ ., data = defaultData)$sDataFrame
+
+```
+
+
+
+## Data Structure
+
+```{r summary_str, output.max = 12, tidy = FALSE}
+
+# Assign rxSummary to an object
+defaultSummary <- rxSummary( ~ ., data = defaultData)
+
+# Examine the structure of the results
+str(defaultSummary)
+
+```
+
+
+
+## Plot Summary Statistics
+
+```{r plotSummary, tidy = FALSE}
+
+# Extract the data frame
+summaryDF <- defaultSummary$sDataFrame
+
+
+# Plot the means
+ggplot(summaryDF, aes(x = Name, y = Mean)) + geom_point(size = 10) +
+    labs(x = "Variable", y = "Variable Mean")
+
+```
+
+
+
+## Groupwise Summary
+
+```{r summary_by_group, eval = FALSE, tidy = FALSE}
+
+rxSummary(creditScore ~ F(year), data = defaultData)
+
+```
+
+```{r summary_by_group_output, echo = FALSE, tidy = FALSE}
+
+rxSummary(creditScore ~ F(year), data = defaultData)$categorical[[1]]
+
+```
+
+
+
+## Extracting a Data Frame
+
+```{r findSummaryCat, eval = FALSE, tidy = FALSE}
+
+scoreByYear <- rxSummary(creditScore ~ F(year), data = defaultData)
+
+str(scoreByYear)
+
+```
+
+
+```{r findSummaryCat_output, output.max = 14, echo = FALSE}
+
+scoreByYear <- rxSummary(creditScore ~ F(year), data = defaultData)
+
+scoreByYear[[3]] <- data.frame()
+
+str(scoreByYear)
+
+```
+
+
+
+## rxQuantile
+
+```{r rxQuantile, tidy = FALSE}
+
+rxQuantile(varName = "creditScore",
+           data = defaultData)
+
+```
+
+
+## Custom Quantiles
+
+```{r nondefault_quantiles, tidy = FALSE}
+
+rxQuantile(varName = "creditScore", 
+           probs = c(0.025, 0.975),
+           data = defaultData)
+
+```
+
+
+
+## Add A Variable
+
+```{r add_cat, tidy = FALSE}
+
+# Create a new path for this modified file
+defaultTemp <- tempfile(fileext = ".xdf")
+
+# Import the source data, adding a categorical creditScore variable
+rxDataStep(inData = defaultData,
+           outFile = defaultTemp,
+           transforms = list(creditScoreCat = cut(creditScore,
+                                                  breaks = seq(from = 400,
+                                                               to = 900,
+                                                               by = 100)))
+           )
+
+
+```
+
+
+
+## Default Counts
+
+```{r rxcrosstabs_univar, eval = FALSE, tidy = FALSE}
+
+rxCrossTabs( ~ F(default), data = defaultTemp)
+
+```
+
+```{r rxcrosstabs_univar_output, echo = FALSE, tidy = FALSE}
+rxCrossTabs( ~ F(default), data = defaultTemp)[["counts"]][[1]]
+```
+
+```{r rxcube_univar, eval = FALSE, tidy = FALSE}
+
+rxCube( ~ F(default), data = defaultTemp)
+
+```
+
+```{r rxcube_output, echo = FALSE, tidy = FALSE}
+as.data.frame(rxCube( ~ F(default), data = defaultTemp))
+```
+
+
+## Bivariate Tables
+
+```{r bivar_tables_syntax, eval = FALSE, tidy = FALSE}
+
+rxCrossTabs( ~ F(default) : creditScoreCat, data = defaultTemp)
+
+rxCube( ~ F(default) : creditScoreCat, data = defaultTemp)
+
+```
+
+
+## Bivariate Tables: rxCrossTabs
+
+```{r rxcrosstabs_bivar, eval = FALSE, tidy = FALSE}
+rxCrossTabs( ~ F(default) : creditScoreCat, data = defaultTemp)
+```
+
+```{r rxcrosstabs_bivar_output, echo = FALSE, tidy = FALSE}
+rxCrossTabs( ~ F(default) : creditScoreCat, data = defaultTemp)[["counts"]][[1]]
+```
+
+
+## Bivariate Tables: rxCube
+
+```{r rxcube_bivar, eval = FALSE, tidy = FALSE}
+rxCube( ~ F(default) : creditScoreCat, data = defaultTemp)
+
+```
+
+```{r rxcube_bivar_output, echo = FALSE, output.max = 12, tidy = FALSE}
+as.data.frame(rxCube( ~ F(default) : creditScoreCat, data = defaultTemp))
+```
+
+
+
+## Three Variables: rxCrossTabs
+
+```{r rxcrosstabs_trivar, eval = FALSE, tidy = FALSE}
+rxCrossTabs( ~ F(default) : creditScoreCat : F(year), data = defaultTemp)
+```
+
+```{r rxcrosstabs_trivar_output, echo = FALSE, output.max = 14, tidy = FALSE}
+rxCrossTabs( ~ F(default) : creditScoreCat : F(year), data = defaultTemp)$counts
+```
+
+
+## Three Variables: rxCube
+
+```{r rxcube_trivar, eval = FALSE, tidy = FALSE}
+rxCube( ~ F(default) : creditScoreCat : F(year), data = defaultTemp)
+```
+
+```{r rxcube_trivar_output, echo = FALSE, output.max = 12, tidy = FALSE}
+as.data.frame(rxCube( ~ F(default) : creditScoreCat : F(year), data = defaultTemp))
+```
+
+
+
+## rxCube with ggplot
+
+```{r plot_cube_wrong, error = TRUE, tidy = FALSE}
+
+creditScoreCounts <- rxCube( ~ creditScoreCat, data = defaultTemp)
+
+# It's actually a list
+class(creditScoreCounts)
+
+# ggplot doesn't know what to do with a list
+ggplot(creditScoreCounts, aes(x = creditScoreCat, weights = Counts)) +
+    geom_bar()
+
+```
+
+
+
+## rxCube data.frame with ggplot
+
+```{r plot_cube_correct, error=TRUE, tidy = FALSE}
+
+creditScoreCountsDF <- rxCube( ~ creditScoreCat, data = defaultTemp,
+                              returnDataFrame = TRUE)
+
+# Now a data.frame
+class(creditScoreCountsDF)
+
+```
+
+```{r plot_cube_output, echo = FALSE, tidy = FALSE}
+# No problem plotting
+ggplot(creditScoreCountsDF, aes(x = creditScoreCat, weights = Counts)) +
+    geom_bar()
+```
+
+
+
+## Weighted Data
+
+```{r get_census, tidy = FALSE}
+
+censusData <- file.path(rxGetOption("sampleDataDir"), "CensusWorkers.xdf")
+
+rxDataStep(censusData, numRows = 10)
+
+
+```
+
+
+
+## Help for Dataset
+
+```{r census_help, eval = FALSE, tidy = FALSE}
+?CensusWorkers
+```
+
+
+\center{
+  \Oldincludegraphics[height=5.0cm]{images/CensusWorkersHelp.png}
+}
+
+
+## Frequency Weights
+
+```{r fweights, eval = FALSE, tidy = FALSE}
+
+rxCube( ~ state : sex,
+       fweights = "perwt",
+       data = censusData)
+
+```
+
+```{r fweights_output, echo = FALSE, tidy = FALSE}
+as.data.frame(
+    rxCube( ~ state : sex,
+           fweights = "perwt",
+           data = censusData)
+)
+```
+
+
+
+## Income Summary
+
+```{r inc_state_summary, eval = FALSE, tidy = FALSE}
+
+rxSummary(incwage ~ state : sex,
+          fweights = "perwt",
+          data = censusData)
+
+```
+
+```{r inc_state_summary_output, echo = FALSE, tidy = FALSE, output.max = 15, size = "tiny"}
+options(width = 115)
+rxSummary(incwage ~ state :  sex,
+          fweights = "perwt",
+          data = censusData)$categorical[[1]]
+```

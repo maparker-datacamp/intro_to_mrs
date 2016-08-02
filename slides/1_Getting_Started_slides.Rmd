@@ -1,0 +1,184 @@
+---
+title: "Getting Started with RRE"
+output: pdf_document
+toc: FALSE
+knit: "RevoKnitR::rx_compile_rmd"
+navigation-symbols: FALSE
+aspect-ratio: 169
+number-frames: FALSE
+fig_caption: no
+---
+
+
+```{r setup, echo = FALSE, results = FALSE}
+
+rxOptions(reportProgress = 0)
+
+opts_chunk$set(tidy = FALSE,
+               cache = FALSE,
+               output.max = 15
+)
+
+# I found more pictures:
+# cp ~/../siddarth.ramesh/github/Revolution_Course_Materials/DataCamp/Getting_Started_With_RRE/src/images/*.png .
+
+```
+
+
+## Learning Objectives
+* Packages constituting RRE
+* Organization of functions
+* Help and documentation
+
+
+## RRE Overview
+
+\center{
+  \Oldincludegraphics[height=5.4cm]{images/rre_components.png}
+}
+
+
+
+## DevelopR: Windows IDE
+\center{
+  \Oldincludegraphics[height=5.4cm]{images/RPE_screenshot.png}
+}
+
+
+
+
+## DeployR: Web Services SDK
+* APIs for Java, Javascript, & .NET 
+* Invokes server-side R Scripts from web services calls
+* RESTful interface
+* Works well with web or mobile apps
+
+
+
+## RevoScaleR
+
+\center{
+  \Oldincludegraphics[height=5.4cm]{images/RevoScaleR_architecture.png}
+}
+
+
+
+
+## ConnectR
+
+Easy access to various data sources
+
+* __SQL ODBC datasources:__ `RxOdBcData`
+* __Hadoop HDFS:__ `RxHadoopMR`
+* __Teradata databases:__ `RxTeradata`
+
+## ScaleR
+
+Functions for parallelized, scalable analytics
+
+* __Data Preparation:__ `rxDataStep`, `rxFactors`, `rxSort`, `rxMerge`, ...
+* __Descriptive Statistics and Summaries:__ `rxSummary`, `rxGetInfo`, `rxCrossTabs`, ...
+* __Correlation and Covariance Matrixes:__ `rxCor`, `rxCov`, `rxCovCor`
+* __Predictive Modeling:__ `rxLinMod`, `rxLogit`, `rxRoc`, ...
+* __Machine Learning:__ `rxKmeans`, `rxDTree`, `rxBTrees`, ...
+  
+## DistributedR
+
+Distributed computing framework based on compute contexts:
+
+* Workstations
+* SMP Servers
+* Grid computing
+* In-database
+* In-Hadoop
+
+## Changing Compute Contexts
+
+```{r eval=FALSE, size="normalsize"}
+rxSetComputeContext("localpar")
+...
+rxSetComputeContext(computeContext = myCluster)
+```
+
+
+## Examples of ScaleR Functions
+
+* `rxImport`: generates XDF files from various data sources
+* `rxDataStep`: multipurpose data filtering and cleaning
+* `rxSummary`: univariate summaries of data
+* `rxLinMod`: linear regression models
+* `rxLogit`: logistic regression models
+	
+## RRE counterparts in R
+
+```{r eval=FALSE, size="normalsize"}
+# Open-Source R
+lm(DepDelay ~ DayOfWeek, airlines_dataframe)
+
+# RRE
+rxLinMod(DepDelay ~ DayOfWeek, "airlines.xdf")
+```
+
+## Examples of ConnectR Functions
+
+* `RxHadoopMR`: creates Hadoop Map Reduce compute context.
+* `RxOdbcData`: generates ODBC data source object.
+* `RxTeradata`: generates Teradata data source object.
+
+
+## Connecting to an ODBC Data Source
+```{r eval=FALSE, size = "small"}
+conStr <- paste("Driver={SQL Server}", "Server=win-database01", 
+                "Database=TestData", 
+                "Uid=mktest", "Pwd=sqlpwd;", sep=";")
+
+claimsDS <- RxOdbcData(sqlQuery="SELECT * FROM claims",
+                       connectionString = conStr)
+
+# Load data from the ODBC connection into an XDF file
+claimsFile <- RxXdfData("claimsFromODBC.xdf")
+rxImport(inData = claimsDS, outFile = claimsFile, overwrite = TRUE)
+```
+
+
+## Resources
+
+* __Revolution Analytics website:__ http://revolutionanalytics.com/resources
+* __User Guides:__ http://packages.revolutionanalytics.com/doc
+* __Revolutions blog:__ http://blog.revolutionanalytics.com
+* __Technical support:__ http://support.revolutionanalytics.com
+
+## Built-in Help
+
+```{r eval=FALSE, size="LARGE"}
+help(package="RevoScaleR")
+```
+
+## RevoScaleR Package Documentation
+
+\center{
+  \Oldincludegraphics[height=5.4cm]{images/RevoScaleR_help.png}
+}
+
+
+
+
+
+## RRE Overview
+
+\center{
+  \Oldincludegraphics[height=5.4cm]{images/rre_components.png}
+}
+
+
+
+
+
+## Try this:
+
+```{r eval=FALSE}
+grep(x = "Revo.*", pattern = rownames(installed.packages()), value = TRUE)
+
+
+?rxLinMod
+```

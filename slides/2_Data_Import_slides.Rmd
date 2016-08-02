@@ -1,0 +1,233 @@
+---
+title: "Data Management with RRE:\nImporting Data"
+output: 
+  pdf_document: 
+    fig_caption: false
+toc: FALSE
+knit: "RevoKnitR::rx_compile_rmd"
+navigation-symbols: FALSE
+aspect-ratio: 169
+number-frames: FALSE
+---
+
+
+```{r setup, echo = FALSE, results = FALSE}
+
+rxOptions(reportProgress = 0)
+
+opts_chunk$set(tidy = FALSE,
+               output.max = 15,
+               fig.height = 6
+)
+
+
+```
+
+
+## XDF Files: eXternal Data Frames
+
+Optimized for big data:
+
+1. read one chunk of data at a time into memory
+2. compute intermediate results for each chunk
+3. combine into final result
+
+## PEMAs
+
+* **Parallel:** distributable to multiple compute processes in a variety of contexts
+
+* **External Memory:** processing data in chunks means the entire dataset never needs to fit into memory at once
+
+* **Algorithms:** including a broad selection of machine learning and statistical methods
+
+## Distributed Compute Contexts
+
+\center{
+  \Oldincludegraphics[height=6.25cm]{images/deploy_anywhere.png}
+}
+
+
+## Column-oriented storage
+
+Within each chunk, data are stored by column. This speeds up column operations like computing the mean.
+
+\center{
+  \Oldincludegraphics[height=4cm]{images/col_oriented.png}
+}
+
+## Row-oriented storage
+
+With row-oriented storage, you need to scan over all rows even if you only want the data from a few columns.
+
+\center{
+  \Oldincludegraphics[height=4cm]{images/row_oriented.png}
+}
+
+## rxImport
+
+
+```{r rxImport}
+
+# Create a file for the XDF
+xdfPath <- tempfile(fileext = ".xdf")
+
+# Read the CSV into the new XDF file
+rxImport(inData = "data/example.csv", 
+         outFile = xdfPath)
+```
+
+## Importing data with open-source R
+
+```{r read_example}
+example <- read.csv("data/example.csv")
+
+```
+
+```{r head_example, echo=FALSE}
+
+kable(head(example))
+
+```
+
+##
+```{r rxGetInfo, eval=TRUE,size="small"}
+rxGetInfo(xdfPath, getVarInfo = TRUE)
+```
+
+## overwrite 
+- By default, `overwrite` is set to **FALSE**
+- This reduces the chances of a file being accidentally overwritten
+
+## append
+
+ - Set `append` to `TRUE` to add new rows to an existing XDF file:
+
+```{r append, eval = FALSE, tidy = FALSE}
+
+rxImport(inData = "July_2015.csv",
+         outFile = "2015_Cumulative.xdf",
+         append = TRUE)
+
+```
+
+## varsToKeep
+- Source data often includes a lot of variables that aren't needed for analysis
+- At scale, reading in those variables can be a serious drag on import times
+- `varsToKeep` and `varsToDrop` allows you to leave all those unnecessary variables behind
+
+## Faster import using varsToKeep
+```{r faster_import_with_varsToKeep, size="footnotesize"}
+
+# Reading all 25 variables
+system.time(flt87_a <- rxImport("data/1987.csv"))
+
+# Reading just three variables
+system.time(flt87_b <- rxImport("data/1987.csv", 
+                                varsToKeep=c("Origin", "Dest", "ArrDelay")))
+```
+
+## colClasses
+- logical
+- integer (stored as int32)
+- int16, uint16
+- numeric (stored as int64)
+- float32
+- character
+- factor, ordered
+- Date, POSIXct (datetime)
+
+## colInfo
+```{r remove_xdf_again, message=FALSE, echo=FALSE, results = 'hide'}
+file.remove(xdfPath)
+xdfPath <- tempfile(fileext = ".xdf")
+```
+
+```{r, size="footnotesize"}
+
+rxImport(inData = mtcars,
+         outFile = xdfPath,
+         colInfo = list(
+             disp = list(newName = "disp_cu_in"),
+             cyl = list(type = "factor",
+                        levels = c("4", "6", "8")),
+             vs = list(newName = "cylinder_config",
+                       levels = c("0", "1"),
+                       newLevels = c("V", "Straight")),
+             am = list(newName = "trans",
+                       levels = c("0", "1"),
+                       newLevels = c("Automatic", "Manual"))
+         )
+)
+```
+
+## Multiple input files
+
+```{r, size="small"}
+mortgage_data_paths <- list.files(
+                          rxGetOption("sampleDataDir"),
+                          pattern = "mortDefaultSmall\\d*.csv",
+                          full.names = TRUE)
+```
+
+```{r, size="tiny", echo = FALSE}
+mortgage_data_paths
+```
+
+## Importing multiple input files
+
+```{r, message=FALSE, size="footnotesize", output.max=15, results="hide"}
+mortgage_xdf <- "mortgage2000_2009.xdf"
+
+lapply(mortgage_data_paths, FUN = function(x) {
+  rxImport(inData = x,
+          outFile = mortgage_xdf,
+          append = file.exists(mortgage_xdf))
+  }
+)
+```
+
+## XDF loaded from multiple inputs
+```{r, size="scriptsize"}
+rxGetInfo(mortgage_xdf)
+```
+
+## RevoScaleR Data Sources
+
+* RxXdfData
+* RxTextData
+* RxSasData
+* RxSpssData
+* RxOdbcData
+* RxTeradata
+
+## Text Data Source
+```{r, eval=FALSE, size="footnotesize"}
+RxTextData(file,  stringsAsFactors = FALSE, colClasses = NULL, colInfo = NULL, 
+           varsToKeep = NULL, varsToDrop = NULL, missingValueString = "NA",
+           rowsPerRead = 500000, delimiter = NULL, combineDelimiters = FALSE,
+           quoteMark = "\"", decimalPoint = ".", thousandsSeparator = NULL,
+           readDateFormat = "[%y[-][/]%m[-][/]%d]", 
+           readPOSIXctFormat = "%y[-][/]%m[-][/]%d [%H:%M[:%S]][%p]",
+           centuryCutoff = 20, firstRowIsColNames = NULL, rowsToSniff = 10000,
+           rowsToSkip = 0, returnDataFrame = TRUE, defaultReadBufferSize = 10000, 
+           defaultDecimalColType = rxGetOption("defaultDecimalColType"),
+           defaultMissingColType = rxGetOption("defaultMissingColType"),
+           writePrecision = 7, stripZeros = FALSE, quotedDelimiters = FALSE,
+           isFixedFormat = NULL, useFastRead = NULL,  verbose = 0, 
+           checkVarsToKeep = FALSE, fileSystem = NULL)
+```
+
+## SAS Data Source
+
+```{r sas_data_source, eval=FALSE, size="footnotesize"}
+
+sasDS <- RxSasData("claims.sas7bdat", stringsAsFactors = FALSE, 
+            colClasses = c(RowNum = "integer"), colInfo = NULL,
+            rowsPerRead = 50, formatFile = "claims.sas7cat", 
+            labelsAsLevels = TRUE, labelsAsInfo = TRUE, 
+            mapMissingCodes = "all",
+            varsToKeep = NULL, varsToDrop = NULL,
+            checkVarsToKeep = FALSE) 
+          
+```
+

@@ -1,0 +1,509 @@
+---
+title: "Data Management with RRE:\nMerging Data"
+output: pdf_document
+toc: FALSE
+knit: "RevoKnitR::rx_compile_rmd"
+navigation-symbols: FALSE
+aspect-ratio: 169
+number-frames: FALSE
+---
+
+
+
+
+```{r setup, include = FALSE}
+
+library(knitr)
+library(sqldf)
+
+rxOptions(reportProgress = 0)
+
+opts_chunk$set(tidy = FALSE,
+               cache = FALSE,
+               output.max = 15,
+               warning = FALSE,
+               message = FALSE
+)
+
+
+# Set the data directory
+data_dir <- "data"
+
+```
+
+
+
+
+```{r lib, echo=FALSE}
+
+
+runSQL <- function(myQuery){
+  library(RSQLite)
+  db_file <- file.path(data_dir,
+                       "top3_airlines_Jan_2000.sqlite3")
+  db <- dbConnect(SQLite(), db_file)
+  tbl <- dbGetQuery(db, myQuery)
+  dbDisconnect(db)
+  return(tbl)
+}
+
+demoSQL <- function(myQuery, n=6){
+  tbl <- runSQL(myQuery)
+  cat(myQuery)
+  knitr::kable(head(tbl, n=n))
+}
+
+SQL_to_kable <- function(myQuery, n=6){
+  tbl <- runSQL(myQuery)
+  knitr::kable(head(tbl, n=n))
+}
+
+sqldf_to_kable <- function(myQuery) kable(sqldf(myQuery))
+
+```
+
+
+
+
+## Airline Data
+```{r, echo=FALSE}
+flight <- runSQL("SELECT UniqueCarrier, FlightNum, Year, Month, DayOfMonth, Origin, Dest, TailNum, DayOfWeek, ArrTime, DepTime, ArrDelay FROM flight LIMIT 8;")
+carrier <- runSQL("SELECT Code, Description FROM carrier WHERE Code IN ('DL','UA','WN','AA','6R');")
+airline <- runSQL("SELECT tailnum, model, year FROM plane WHERE model != '' LIMIT 3;")
+```
+
+\center{\Oldincludegraphics[height=5.4cm]{images/airline_tables.png}}
+
+
+
+
+
+## Airline Database
+
+\center{\Oldincludegraphics[height=5.7cm]{images/airlines_ERD_edited_1.png}}
+
+
+
+
+
+## Composite Key
+
+```{r flights_composite_key, include = FALSE}
+# https://en.wikipedia.org/wiki/Flight_number
+composite_key_sql <- "
+SELECT UniqueCarrier, FlightNum, Year, Month, 
+    DayofMonth, DepTime, TailNum, Origin, Dest  
+FROM flight
+WHERE FlightNum=789 AND Year=2000 AND Month=1 AND DayofMonth=1 
+ORDER BY UniqueCarrier, DepTime;"
+```
+
+```{r print_composite_key, eval = FALSE, size = "scriptsize"}
+SELECT UniqueCarrier, FlightNum, Year, Month, DayofMonth, DepTime, TailNum, Origin, Dest  
+FROM flight
+WHERE FlightNum = 789 
+  AND Year = 2000 
+  AND Month = 1
+  AND DayofMonth = 1 
+ORDER BY UniqueCarrier, DepTime;
+```
+
+```{r, echo = FALSE}
+SQL_to_kable(composite_key_sql, n=12)
+```
+
+
+
+
+## Analysis Table
+```{r denormalized_table, echo=FALSE, eval=FALSE}
+denormalized_tbl <- runSQL("SELECT UniqueCarrier, carrier.Description Carrier, FlightNum, flight.Year, Month, DayofMonth, Origin, Dest, DayOfWeek, ArrTime, DepTime, plane.model AS plane_model, plane.year as plane_year, ArrDelay
+  FROM flight
+	INNER JOIN carrier
+	ON flight.UniqueCarrier = carrier.Code
+	LEFT OUTER JOIN plane
+	ON flight.TailNum = plane.tailnum 
+	WHERE DayofMonth=1 AND plane.model IS NOT NULL
+	LIMIT 10")
+```
+
+\center{\Oldincludegraphics[height=4.9cm]{images/denormalized.png}}
+
+## External Table
+
+\center{\Oldincludegraphics[height=5.7cm]{images/airlines_ERD_edited_2.png}}
+
+
+
+
+
+## Toy Datasets for Merges
+
+```{r toy_merges_setup, echo=FALSE}
+uc <- data.frame(id=1:6, letter=LETTERS[1:6])
+scrambled_id <- sample(4:9)
+lc <- data.frame(id=scrambled_id, letter=letters[scrambled_id])
+```
+
+\center{\Oldincludegraphics[height=5.7cm]{images/uc_lc.png}}
+
+
+
+
+## Inner Join
+```{r inner_join_sql}
+sqldf("SELECT * FROM uc JOIN lc USING (id)")
+```
+
+
+
+
+## Inner Joins with merge and rxMerge
+```{r toy_merge_inner_join_2}
+merge(uc, lc, by="id")
+rxMerge(uc, lc, matchVars = "id")
+```
+
+
+
+
+
+## Inner Join is the Default in rxMerge
+```{r}
+# In rxMerge, the "type" parameter specifies the kind of join.
+rxMerge(inData1 = uc, inData2 = lc, matchVars = "id", type="inner")
+```
+
+
+
+
+## Inner Join is the Default in SQL
+```{r}
+# "JOIN" in SQL means "INNER JOIN" unless you say otherwise.
+sqldf("SELECT * FROM uc INNER JOIN lc USING (id)")
+```
+
+
+
+
+## Left Outer Join
+```{r left_outer_joins, tidy=FALSE}
+sqldf("SELECT uc.id, uc.letter letter_uc, lc.letter letter_lc 
+       FROM uc LEFT OUTER JOIN lc USING (id)")
+```
+
+
+
+
+## Left Outer Join
+```{r left_outer_join_merge_rxMerge, output.max = 5}
+# merge from base R
+merge(uc, lc, by="id", all.x=TRUE)
+
+# rxMerge
+rxMerge(inData1 = uc, inData2 = lc, matchVars = "id", type="left")
+```
+
+
+
+
+## Union
+
+\center{\Oldincludegraphics[height=5.4cm]{images/Three_Unions.png}}
+
+
+
+
+
+## oneToOne
+```{r oneToOne_join, output.max = 5}
+rxMerge(inData1 = uc, inData2 = lc, matchVars = "id", type="oneToOne")
+cbind(uc, lc)
+```
+
+
+
+
+## Merging Multiple Tables
+
+```{r multiple_join, eval = FALSE, tidy = FALSE}
+
+# Joining three tables in RRE
+rxMerge(inData = list(xdf1, xdf2, xdf3),
+        matchVars = "id")
+
+
+# Joining three tables in SQL
+SELECT * 
+FROM table1 
+JOIN table2 
+    USING (id) 
+JOIN table3 
+    USING (id)
+```
+
+
+
+
+## Merging Airline Tables
+
+```{r airline_join_sql, echo=FALSE, message=FALSE}
+sql <- "SELECT flight.*, carrier.Description Carrier, plane.*
+    FROM flight 
+INNER JOIN carrier
+    ON flight.UniqueCarrier = carrier.Code
+LEFT OUTER JOIN plane
+    ON flight.TailNum = plane.tailnum"
+
+demoSQL(sql)
+
+```
+
+
+
+
+## SQL Query in RxOdbcData Object
+
+```{r rxodbcdata_pre, include = FALSE}
+data_dir <- "data"
+airlines_db <- file.path(data_dir,"top3_airlines_Jan_2000.sqlite3")
+airlines_xdf <- file.path(data_dir, "top3_airlines_Jan_2000_analysis.xdf")
+```
+
+```{r connect_odbc, tidy = FALSE, eval = FALSE}
+odbc_connection <- "Driver={SQLite3 ODBC Driver};Database=data/top3_airlines_Jan_2000.sqlite3"
+
+odbc_data <-
+  RxOdbcData(sqlQuery = "SELECT flight.*, carrier.Description Carrier, plane.* 
+                         FROM flight 
+                         INNER JOIN carrier
+                             ON flight.UniqueCarrier = carrier.Code
+                         LEFT OUTER JOIN plane
+                        	 ON flight.TailNum = plane.tailnum",
+             connectionString = odbc_connection)
+
+head(odbc_data)
+```
+
+
+
+
+## Importing to XDF: colClasses and colInfo
+
+```{r import_odbc, eval = FALSE, size = "tiny", tidy = FALSE}
+
+colClasses <- sapply(head(odbc_data, n=1000), class)
+colClasses[c("engine_type")] <- "factor"
+colClasses[c("Year", "year", "DayOfMonth", "DayOfWeek", "DepTime", "ArrTime")] <- "uint16"
+
+colInfo <- list(
+    UniqueCarrier = list(type="factor", 
+                         levels=c("DL", "UA", "WN")),
+    Carrier = list(type = "factor",
+                   levels = c("Delta Air Lines Inc.", "United Air Lines Inc.", "Southwest Airlines Co.")),
+    year = list(newName = "aircraft_year")
+)
+
+rxImport(inData = odbc_data, 
+         outFile = airlines_xdf, 
+         colClasses = colClasses, 
+         colInfo = colInfo, 
+         overwrite = TRUE)
+
+```
+
+
+
+
+## Using an SQL View
+
+```{r sql_view, eval = FALSE, size = "scriptsize"}
+# In SQL
+CREATE VIEW analysis_view AS 
+  SELECT flight.*, 
+         carrier.Description Carrier, 
+         plane.* FROM flight 
+  JOIN carrier
+      ON flight.UniqueCarrier = carrier.Code
+  LEFT OUTER JOIN plane
+      ON flight.TailNum = plane.tailnum
+```
+
+\hrulefill
+
+```{r an_RxOdbcData_with_a_view, eval=FALSE}
+# In R
+view_data <- RxOdbcData(table = "analysis_view", connectionString = odbc_connection)
+
+head(view_data)
+```
+
+
+## External Table: Airports
+
+\center{\Oldincludegraphics[height=6.4cm]{images/airlines_ERD_edited_2.png}}
+
+## Airport Data
+```{r read_airports}
+airports <- read.csv(file.path(data_dir, "airports.csv"), stringsAsFactors=FALSE)
+```
+
+```{r examine_airports, echo=FALSE}
+knitr::kable(head(read.csv(file.path(data_dir, "airports.csv"))))
+```
+
+
+## Merging on Airport Details
+
+```{r merge_origin, cache = TRUE, tidy = FALSE, eval = FALSE}
+# New XDF path for flights with origin location merged on
+airlines_with_location <- file.path(data_dir, "airlines_with_location.xdf")
+
+rxMerge(inData1 = airlines_xdf, inData2 = airports, 
+        outFile = airlines_with_location,
+        matchVars ="Origin",
+        newVarNames2 = c(iata = "Origin",
+                         airport = "orig_airport", city = "orig_city", state = "orig_state", 
+                         lat = "orig_lat", long = "orig_long")
+)
+
+rxMerge(inData1 = airlines_with_location, inData2 = airports,
+        outFile = airlines_with_location,
+        matchVars = "Dest",
+        newVarNames2 = c(iata = "Dest", 
+                         airport = "dest_airport", city = "dest_city", state = "dest_state", 
+                         lat = "dest_lat", long = "dest_long"),
+        overwrite = TRUE)
+```
+
+
+
+## Map Routes for Carriers
+\center{\Oldincludegraphics[height=5.7cm]{images/United_routes.png}}
+
+
+
+
+
+
+## Flight Legs with Headings
+\center{\Oldincludegraphics[height=5.7cm]{images/WN863.png}}
+
+
+
+
+
+
+## Direction-Dependent Delay
+
+Slightly greater delay for planes heading West.
+
+\center{\Oldincludegraphics[height=5.5cm]{images/polar_barplot.png}}
+
+
+
+
+
+
+## rxMerge Parameters: Input
+  + `inData1`: either
+    - a data frame
+    - an XDF file name
+    - an `RxXdfData` object, or
+    - a list of `RxXdfData` objects
+  + `inData2`
+    - optional second data set
+    - only used if `inData1` is not a list
+
+
+
+
+
+## rxMerge Parameters: Output
+
+ - `outFile`: XDF file for output (returns a dataframe if `NULL`)
+
+ - `overwrite`: whether the output XDF file should be overwritten (if it already exists)
+
+ - `maxRowsByCols`: limit on the total size of the dataframe returned (when `outFile = NULL`)
+
+ - `rowsPerOutputBlock`: controls output data chunk size
+    
+ - `xdfCompressionLevel`: controls level of compression in the output XDF file.
+
+
+
+
+
+## Merging
+
+  + `type`
+    - inner
+    - left
+    - right
+    - full
+    - oneToOne
+    - union
+  + `matchVars`
+    - names columns to use as keys in the merge
+    
+    
+    
+
+
+## Renaming Columns
+
+  + `newVarNames1`
+    - specifies new names for the columns of `inData1`
+  + `newVarNames2`
+    - specifies new names for the columns of `inData2`
+  + `duplicateVarExt`
+    - suffixes to be added to any non-unique column names
+
+
+
+
+## Column Selection
+
+  + `varsToKeep1`, `varsToDrop1`
+    - vector of column names to keep (or drop) from `inData1`
+    - ignored if NULL
+    - either use keep or drop, not both
+  + `varsToKeep2`, `varsToDrop2`
+    - same thing for `inData2`
+
+
+
+
+## Sorting Options
+
+  + `autoSort`
+    - whether `rxMerge` should automatically sort the datasets before merging
+  + `missingsLow`
+    - whether missing values should be sorted as the lowest value
+  + `decreasing`
+    - whether values should be sorted highest-to-lowest
+
+
+
+
+## Messages
+
+  + `reportProgress`
+    - 0: no progress messages
+    - 1: show number of processed rows
+    - 2: also show timings
+    - 3: show it all
+  + `verbose`
+    - 0: no additional output
+    - 1: show summary messages 
+
+
+
+
+## Processing
+
+  + `bufferLimit`
+    - integer specifying Mb of RAM for merge buffer
+    - default (-1) sets buffer size automatically
+  

@@ -1,0 +1,381 @@
+---
+title: "Data Management with RRE:\nSimple Transformations"
+output: pdf_document
+toc: FALSE
+knit: "RevoKnitR::rx_compile_rmd"
+navigation-symbols: FALSE
+aspect-ratio: 169
+number-frames: FALSE
+---
+
+```{r setup, echo = FALSE, results = FALSE}
+
+rxOptions(reportProgress = 0)
+
+opts_chunk$set(tidy = FALSE,
+               output.max = 15
+)
+
+
+```
+
+
+## Set Up Sample Data
+
+```{r import}
+
+# First, set up pointers to the source XDF file
+sourcePath <- file.path(rxGetOption("sampleDataDir"), "DJIAdaily.xdf")
+
+# And a temporary file
+xdfPath <- tempfile(fileext = ".xdf")
+
+# Import from the source file to our temporary one
+rxImport(inData = sourcePath,
+         outFile = xdfPath)
+
+```
+
+## Set Up Sample Data
+
+```{r examine_data}
+
+# Look at the top several rows
+rxDataStep(xdfPath, numRows = 6)
+
+
+```
+
+## Set Up Sample Data
+
+```{r examine_data2}
+
+# Let's see what types those variables are
+rxGetVarInfo(xdfPath)
+
+```
+
+## Converting Character to Date
+
+```{r char_to_date}
+
+rxDataStep(inData = xdfPath,
+           outFile = xdfPath,
+           transforms = list(Date2 = as.Date(Date)),
+           overwrite = TRUE
+)
+
+```
+
+
+## Converting Character to Date
+
+```{r char_to_date_check, output.max = 15}
+
+rxGetVarInfo(xdfPath)
+
+
+```
+
+
+## Transforms for Multiple Variables
+
+```{r multitransform}
+
+rxDataStep(inData = xdfPath,
+           outFile = xdfPath,
+           transforms = list(
+               Date2 = as.Date(Date),
+               combinedDate = paste(Year, Month, DayOfMonth, sep = "-"),
+               Date3 = as.Date(combinedDate)
+           ),
+           overwrite = TRUE
+)
+
+```
+
+## Multiple Transformations
+
+```{r multitransform_check}
+
+rxGetVarInfo(xdfPath)
+
+```
+
+
+
+## Dropping Variables
+
+
+```{r lotta_vars}
+
+rxDataStep(xdfPath, numRows = 6)
+
+```
+
+## Dropping Variables
+
+```{r drop_vars}
+
+xdfSubset <- tempfile(fileext = ".xdf")
+
+rxDataStep(inData = xdfPath,
+           outFile = xdfSubset,
+           varsToDrop = c("Date", "Year", "Month", "DayOfMonth",
+                          "DaysSince1928", "YearFrac", "combinedDate", "Date3")
+)
+
+```
+
+## Dropping Variables
+
+```{r drop_vars_check}
+
+rxDataStep(xdfSubset, numRows = 6)
+
+
+```
+
+
+## Keeping Variables
+
+```{r keep_vars}
+
+xdfSubset <- tempfile(fileext = ".xdf")
+
+rxDataStep(inData = xdfPath,
+           outFile = xdfSubset,
+           varsToKeep = c("Date2", "Open", "High", "Low", "Close", 
+                          "Volume", "DayOfWeek")
+)
+
+
+```
+
+## Keeping Variables
+
+```{r keep_vars_check}
+
+rxDataStep(xdfSubset, numRows = 6)
+
+```
+
+
+
+
+
+## Subsetting Rows: By Date
+
+```{r subset_2000}
+
+xdf2000 <- tempfile(fileext = ".xdf")
+
+rxDataStep(inData = xdfSubset,
+           outFile = xdf2000,
+           rowSelection = Date2 > as.Date("1999-12-31")
+)
+
+```
+
+## Subsetting Rows and Columns
+
+```{r subset_MonFri}
+
+xdfMonFri <- tempfile(fileext = ".xdf")
+
+rxDataStep(inData = xdfSubset,
+           outFile = xdfMonFri,
+           rowSelection = DayOfWeek %in% c("Monday", "Friday"),
+           varsToKeep = c("Date2", "DayOfWeek", "Open", "Close")
+)
+
+```
+
+
+
+
+```{r delete_tempfiles, echo = FALSE, results = 'hide'}
+
+# Feels like an excess of tempfiles is causing errors later - not sure
+file.remove(xdf2000)
+file.remove(xdfMonFri)
+
+```
+
+
+
+## Scaling (The Wrong Way)
+
+```{r naive_scaling}
+
+# Reasonable but wrong
+rxDataStep(inData = xdfSubset,
+           outFile = xdfSubset,
+           transforms = list(VolumeScaled = 
+               (Volume - min(Volume)) / (max(Volume) - min(Volume))
+           ),
+           overwrite = TRUE
+)
+
+```
+
+
+## Scaling (The Wrong Way)
+
+```{r naive_histogram, echo = FALSE}
+
+library(ggplot2)
+
+# Extract the data into a data.frame
+compareVolumes <- rxDataStep(xdfSubset)
+
+# Histogram of VolumeScaled
+ggplot(compareVolumes, aes(x = VolumeScaled)) +
+    geom_histogram(color = "white") +
+    labs(title = "Scaled values between zero and one? Yep")
+
+
+```
+
+
+## Scaling (The Wrong Way)
+
+```{r naive_scatter, echo = FALSE}
+
+# Checking for linearity of transformation
+ggplot(compareVolumes, aes(x = Volume, y = VolumeScaled)) +
+    geom_point(alpha = 0.4) + 
+    labs(title = "Scaled volume a linear function of volume? Nope")
+
+```
+
+## Scaling (The Wrong Way)
+
+```{r naive_timeline, echo = FALSE}
+
+# Melt down for comparative plotting
+library(reshape2)
+
+compareVolumesMelt <- melt(compareVolumes, 
+                           id.var = "Date2",
+                           measure.var = c("Volume", "VolumeScaled")
+)
+
+# When does the actual volume max happen? The scaled maxes?
+volumeMaxes <- rbind(
+    data.frame(Date2 = with(compareVolumes, Date2[Volume == max(Volume)]),
+               variable = "Volume"),
+    data.frame(Date2 = with(compareVolumes, Date2[VolumeScaled == 1]),
+               variable = "VolumeScaled")
+)
+
+
+ggplot(compareVolumesMelt, aes(x = Date2, y = value, color = variable)) +
+    geom_point() +
+    geom_vline(data = volumeMaxes, 
+               aes(xintercept = as.numeric(Date2))) +
+    facet_wrap( ~ variable, 
+               nrow = 2,
+               scales = "free_y") +
+    labs(title = "Comparing Unscaled and Scaled Maximums") +
+    guides(color = FALSE)
+
+```
+
+
+## One Maximum Per Chunk
+
+```{r chunk_count}
+rxGetInfo(xdfSubset)
+```
+
+
+## Scaling (The Right Way)
+
+```{r calc_minmax}
+
+# Min and max values can be extracted from rxGetInfo
+str(rxGetInfo(xdfSubset, getVarInfo = TRUE))
+
+```
+
+
+## Scaling (The Right Way)
+
+```{r assign_minmax}
+
+# Assign them for easy reference
+volumeMin <- rxGetInfo(xdfSubset, getVarInfo = TRUE)$varInfo$Volume$low
+volumeMax <- rxGetInfo(xdfSubset, getVarInfo = TRUE)$varInfo$Volume$high
+
+```
+
+
+## Scaling (The Right Way)
+
+```{r tempfix, echo = FALSE, results = 'hide'}
+
+file.remove(xdfSubset)
+
+rxDataStep(inData = xdfPath,
+           outFile = xdfSubset,
+           varsToKeep = c("Date2", "Open", "High", "Low", "Close", 
+                          "Volume", "DayOfWeek")
+)
+
+```
+
+```{r scale_with_minmax}
+
+rxDataStep(inData = xdfSubset,
+           outFile = xdfSubset,
+           transformObjects = list(volumeMin = volumeMin, 
+                                   volumeMax = volumeMax),
+           transforms = list(VolumeScaled = 
+               (Volume - volumeMin) / (volumeMax - volumeMin)),
+           overwrite = TRUE
+)
+
+```
+
+## Scaling (The Right Way)
+
+
+```{r correct_scatter, echo = FALSE}
+compareVolumes2 <- rxDataStep(xdfSubset)
+
+ggplot(compareVolumes2, aes(x = Volume, y = VolumeScaled)) +
+    geom_point(alpha = 0.4) + 
+    labs(title = "Scaled volume a linear function of volume? Yes!")
+```
+
+## Transform with a Package
+
+```{r extract_date}
+
+rxDataStep(inData = xdfSubset,
+           outFile = xdfSubset,
+           transformPackages = "lubridate",
+           transforms = list(year = year(Date2)),
+           overwrite = TRUE
+)
+
+```
+
+## Creating Factors
+
+```{r factors}
+
+rxDataStep(inData = xdfSubset,
+           outFile = xdfSubset,
+           transforms = list(
+               DayOfWeekFactor = factor(DayOfWeek,
+                                        levels = c("Monday", "Tuesday",
+                                                   "Wednesday", "Thursday",
+                                                   "Friday"))),
+           overwrite = TRUE
+)
+
+```
+
+

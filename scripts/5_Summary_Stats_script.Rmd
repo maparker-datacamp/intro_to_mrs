@@ -1,0 +1,477 @@
+
+
+```{r setup, echo = FALSE}
+
+rxOptions(reportProgress = 0)
+
+library(ggplot2)
+
+theme_set(theme_bw())
+
+
+```
+
+
+# Data Management with RRE:    
+# Summary Statistics
+
+
+## Intro
+
+Welcome back to Data Management with Revolution R Enterprise. In our last
+session, we learned how to transform multiple variables at once, create
+transformation functions that pass results between chunks, and create and
+modify complex factors.
+
+Throughout the last few sessions, we've occasionally seen some of RRE's
+summary functions in use, like `rxGetInfo` and `rxSummary`.
+In this session, we'll take a closer look at RRE's functions for calculating
+those summary statistics, as well as tables and correlations.
+
+
+
+
+## Numeric Variables
+
+### rxSummary
+
+First, let's take a closer look at `rxSummary`. This is your workhorse function
+for the classic univariate statistics - mean, standard deviation, minimum,
+maximum, and the number of valid and missing observations.
+
+
+```{r summarize_one}
+
+# Create a pointer to one of RRE's sample XDFs
+defaultData <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
+
+# Summarize credit score
+rxSummary( ~ creditScore, data = defaultData)
+
+```
+
+`rxSummary` uses R's formula syntax to specify which variables should be
+summarized. The formula syntax is most commonly seen in regression 
+functions like `lm` and `glm`, but it's a useful convention in other situations,
+too. To summarize one variable, we just name it on the right-hand side of the
+formula.
+
+```{r summarize_two}
+
+rxSummary( ~ creditScore + ccDebt, data = defaultData)
+
+```
+
+We can add a second variable to the summary by separating it from the first
+with a plus sign.
+
+```{r summarize_all}
+
+rxSummary( ~ ., data = defaultData)
+
+
+```
+
+And we can summarize *all* of the variables in a dataset by putting a dot on
+the right-hand side of the formula. The dot represents any variable not already
+specified in the formula - in this case, that's all of them.
+
+So far, this is straightforward. But often in the course of an analysis, we want
+to use these summary statistics as inputs for another process, like plotting.
+In that case, we can save the output of `rxSummary` as an R object and pass it
+to other functions.
+
+```{r summary_str}
+
+# Assign rxSummary to an object
+defaultSummary <- rxSummary( ~ ., data = defaultData)
+
+# Check the class
+str(defaultSummary)
+
+```
+
+If we use R's `str` command to look at what `rxsummary` returns, we can see it's
+a bit more complex than what it prints to the screen. Most of this stuff is
+related to the arguments we gave `rxSummary` and isn't much use. But one
+element, `sDataFrame`, looks like it has what we need: a data frame in which
+each variable in our data is a row, and each summary statistic is a column.
+It's easy to extract this data frame and plot the stats:
+
+```{r plotSummary}
+
+# Extract the data frame
+summaryDF <- defaultSummary$sDataFrame
+
+
+# Plot the means
+ggplot(summaryDF, aes(x = Name, y = Mean)) +
+    geom_point(size = 10) +
+    labs(x = "Variable", y = "Variable Mean")
+
+
+```
+
+This code generates a simple plot of the means, but we could go on to plot the
+minimums and maximums, or to use the standard deviations to plot ranges around
+the means, and so on.
+
+
+
+### Groupwise Summary
+
+Now, what if we wanted to know how average credit score had changed over
+the years represented in this data? We can easily calculate group-wise means with
+`rxSummary`. We just have to make a couple modifications to our code:
+
+
+```{r summary_by_group}
+
+rxSummary(creditScore ~ F(year), data = defaultData)
+
+```
+
+First, we move `creditScore` to the *left* hand side of the formula - this is
+traditionally where the dependent variable would go in a regression, and it's
+how we tell `rxSummary` that *these* summary stats will be dependent on some
+second variable. On the right-hand side of the formula, we add `year`. If year
+were already a factor, that would be enough, but it's actually an integer - so
+we use the capital-F function so that `rxSummary` will treat the year variable
+as a factor. Normally we'd need to create a proper factor variable on our
+dataset, but there's some behind-the-scenes magic when formulas are involved
+that makes capital-F work as a shortcut.
+
+In the output of `rxSummary`, each row now represents one category of the
+right-hand variable, instead of one whole variable as before. But we can plot
+the results just as easily:
+
+```{r plotSummaryCat}
+
+scoreByYear <- rxSummary(creditScore ~ F(year), data = defaultData)
+
+str(scoreByYear)
+
+summaryDFCat <- scoreByYear$categorical[[1]]
+
+ggplot(summaryDFCat, aes(x = F_year, y = Means)) +
+    geom_point(size = 10) +
+    geom_line(aes(group = 1)) +
+    labs(x = "Year",
+         y = "Average Credit Score")
+
+
+```
+
+Accessing the data frame of results is a little different, but using R's `str` 
+function again makes it fairly evident that the results have moved from the
+`sDataFrame` element down to the `categorical` element. If you ever have trouble
+finding the element you need inside of an R object, `str` should help you find
+it.
+
+
+
+
+### rxQuantile
+
+Unfortunately, `rxSummary` can only compute the statistics we've seen so far:
+mean, standard deviation, etc. What if we want to calculate quantiles, like
+the median? The function for quantiles is simply `rxQuantile`. Right now,
+`rxQuantile` can only calculate results for one variable at a time, so there's
+no formula interface.
+The syntax is very straightforward - just name the variable and the dataset:
+
+```{r rxQuantile}
+
+rxQuantile(varName = "creditScore", data = defaultData)
+
+```
+
+`rxQuantile` defaults to the 25th, 50th, and 75th quantiles, as well as the
+zeroth and hundredth, which are the same as the min and max.
+Other quantiles can be calculated by simply changing the `probs` argument
+of `rxQuantile`. Here's an example that returns the upper and lower limits of
+a 95 percent interval.
+
+```{r nondefault_quantiles}
+
+rxQuantile(varName = "creditScore", 
+           probs = c(0.025, 0.975),
+           data = defaultData)
+
+```
+
+Quantiles are a little more challenging to compute on big data because they
+depend on all of values of the variable in question at once. Consequently,
+`rxQuantile` is less flexible than `rxSummary`.
+
+
+
+
+## Categorical Variables
+
+So far, we've focused on summary statistics for numeric variables, but for
+categorical variables, we typically turn to tables. RRE has two functions for 
+making tables and crosstabs: `rxCrossTabs` and `rxCube`.
+`rxCrossTabs` is the more traditional interface,
+generating a table where each unique combination of `x` and `y` is represented
+by a cell with a count of how often that combination occurs.
+
+In `rxCube`, `x` and `y` are both columns, such that each *row* 
+represents a unique combination of values in `x` and `y`, with a third column
+containing the count. We'll compare the output of these two functions - but
+first, let's add another categorical variable to our dataset.
+
+```{r add_cat}
+
+# Create a new path for this modified file
+defaultTemp <- tempfile(fileext = ".xdf")
+
+# Import the source data, adding a categorical creditScore variable
+rxDataStep(inData = defaultData,
+           outFile = defaultTemp,
+           transforms = list(creditScoreCat = cut(creditScore,
+                                                  breaks = seq(from = 400,
+                                                               to = 900,
+                                                               by = 100)))
+)
+
+
+```
+
+I'm going to split `creditScore` into bins one hundred points wide, ranging
+from four hundred to nine hundred, just so we have a third categorical variable
+to work with. I'm using open-source R's `cut` function, which returns a factor;
+but because I'm specifying all of the levels in advance (from four hundred, to
+nine hundred, by one hundred), I don't need to use `rxFactors`.
+
+Okay - let's take a look at the output of `rxCrossTabs` and `rxCube` for a 
+single variable. We've been working with mortgage default data, but still don't
+have a good idea of how many defaults there are in that data. Let's check that.
+
+```{r table_univar}
+
+rxCrossTabs( ~ F(default),
+            data = defaultTemp)
+
+rxCube( ~ F(default),
+       data = defaultTemp)
+
+```
+
+`rCube` and `rxCrossTabs` both use the formula syntax mentioned earlier.
+So far, the results of the two functions look about the same. With two 
+variables, however, they'll start to look distinct:
+
+```{r table_bivar}
+
+rxCrossTabs( ~ F(default) : creditScoreCat,
+            data = defaultTemp)
+
+rxCube( ~ F(default) : creditScoreCat,
+       data = defaultTemp)
+
+
+```
+
+I'm still using the formula syntax, but instead of the plus sign,
+I'm using a colon to separate the variables. Roughly speaking, that means that
+I'm interested in the relationship between these two variables, but that
+neither is "dependent" on the other.
+
+Take a look at the `rxCrossTabs` results. The unique values of `default` - 
+zero and one - each get a row,
+and the unique values of `creditScoreCat` each get a column. The cells of this
+table represent each possible unique combination of `default` and 
+`creditScoreCat`, and contain the counts of how often that combination occurs.
+
+In `rxCube`, each combination of `default` and `creditScoreCat` gets
+one row, and all of the counts are in a third column. At this point, both tables
+are about equally easy to read, although the cube version would be easier
+to use as an input for a plot or a regression. Let's see what happens when
+we add `year` as a third variable.
+
+
+```{r table_bivar}
+
+rxCrossTabs( ~ F(default) : creditScoreCat : F(year),
+            data = defaultTemp)
+
+rxCube( ~ F(default) : creditScoreCat : F(year),
+       data = defaultTemp)
+
+
+```
+
+To accommodate a third dimension, `rxCrossTabs` is generating a complete
+crosstabulation of `default` and `creditScoreCat` for each `year`. `rxCube`, on
+the other hand, has almost the same format as before: it's just added a new
+column for `year`, and many new rows to account for all the new combinations.
+For tables with three or more dimensions, `rxCube` 
+produces much more manageable results.
+
+There's one catch to using `rxCube` results in another function: you have to
+ask `rxCube` to return a data frame. Otherwise, the `rxCube` output is just a 
+list that many functions won't know what to do with.
+In this example, I'm just trying to plot
+the counts of each credit score category. As you can see, ggplot doesn't know
+what to do with the list returned by `rxCube`.
+
+```{r plot_cube_wrong}
+
+creditScoreCounts <- rxCube( ~ creditScoreCat,
+                            data = defaultTemp)
+
+# It's actually a list
+class(creditScoreCounts)
+
+# ggplot doesn't know what to do with a list
+ggplot(creditScoreCounts, aes(x = creditScoreCat, weights = Counts)) +
+    geom_bar()
+
+```
+
+To solve this problem, I simply set the `returnDataFrame` argument to TRUE.
+That allows the output of `rxCube` to be used directly inside of `ggplot`, or
+any other function that expects a data frame.
+
+
+```{r plot_cube_correct}
+
+
+creditScoreCountsDF <- rxCube( ~ creditScoreCat,
+                              data = defaultTemp,
+                              returnDataFrame = TRUE)
+
+# Now a data.frame
+class(creditScoreCountsDF)
+
+# No problem plotting
+ggplot(creditScoreCountsDF, aes(x = creditScoreCat, weights = Counts)) +
+    geom_bar()
+
+
+```
+
+
+
+Let's review: `rxCrossTabs` represents unique combinations of two or more 
+variables as cells in a table. 
+`rxCube` represents those unique combinations as rows in a table. 
+Some people prefer the output of `rxCrossTabs` for reading, but
+`rxCube` is almost always the format you want if you're going to use the results
+in another function - in which case you need to set `returnDataFrame` to TRUE.
+
+
+
+## Weighted Data
+
+By default, these two tabulating functions treat every row of your data equally,
+as one observation. But one row doesn't always correspond exactly to one 
+observation. For example, census data is commonly pre-aggregated, so that
+every combination of characteristics is represented by one row, with a column
+indicating the frequency of that combination - just like the output of `rxCube`.
+Another example is data collected using stratified sampling, where some
+groups are oversampled during data collection and then weighted during analysis
+to reflect their actual population prevalence.
+
+Fortunately, many functions in RRE, including `rxSummary`, `rxCrossTabs`,
+`rxCube`, and most of the statistical models, can adjust their results to
+accommodate  weights. Let's look at an example. First, let's load up some US
+Census data that's included with RRE:
+
+
+```{r get_census}
+
+censusData <- file.path(rxGetOption("sampleDataDir"), "CensusWorkers.xdf")
+
+rxDataStep(censusData, numRows = 10)
+
+
+```
+
+Using `rxDataStep` to check the first few rows, I can see a variable called
+"per weight" that's probably my weighting variable - but to be sure, I can take a
+quick look at the help file for this dataset:
+
+```{r census_help}
+
+?CensusWorkers
+
+```
+
+Here in the help file, I can see that each row in this dataset represents an
+entire group of people with the same age, sex, location, number of weeks worked, 
+and approximate income, and that the "per weight" column is a count of how
+many such people there are in this entire sample.
+
+There are two options for using weights: `fweights` for *frequency* weighting
+variables, and `pweights` for *probability* weighting variables. Since
+"per weight" is a count of individuals, it's a frequency weight. Both
+`rxCrossTabs` and `rxCube` return the same results, so I'll just show the
+cube version:
+
+
+```{r fweights}
+
+rxCube( ~ state : sex,
+       fweights = "perwt",
+       data = censusData)
+
+```
+
+If I wanted to summarize income by state and sex, I could use `rxSummary`. I'll
+just put wage variable on the left-hand side of the same formula, which gives me
+a row for each combination of state and sex, with the summary stats for income
+for each of those groups. `rxSummary` also returns a "SumOfWeights" variable,
+which is the same as the "Counts" column that `rxCube` returned.
+
+```{r income_summary}
+
+rxSummary(incwage ~ state :  sex,
+          fweights = "perwt",
+          data = censusData)
+
+rxSummary( ~ sex,
+          fweights = "perwt",
+          data = censusData)
+
+
+```
+
+As you can see, it's simple to modify your code to account for weighted data.
+If you have probability weights, which are usually represented as a proportion
+that sums to one across the whole dataset, you can use the function `pweights`
+instead of `fweights` to achieve the same effect.
+
+
+
+## Conclusion
+
+That's all we have time for in this session. You should now have the tools you
+need to create just about any kind of summary statistics you need, whether
+your variable is quantitative or categorical, or your dataset is weighted or
+unweighted. 
+
+Take care, and see you next time.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

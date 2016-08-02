@@ -1,0 +1,433 @@
+---
+title: "Data Management with RRE:\nAdvanced Transformations"
+output: pdf_document
+toc: FALSE
+knit: "RevoKnitR::rx_compile_rmd"
+navigation-symbols: FALSE
+aspect-ratio: 169
+number-frames: FALSE
+---
+
+
+```{r setup, include = FALSE}
+
+rxOptions(reportProgress = 0)
+
+opts_chunk$set(tidy = FALSE,
+               cache = FALSE,
+               output.max = 15
+)
+
+
+```
+
+
+
+## Simple Transformations Review
+
+Arguments in `rxDataStep`:
+
+* creating and transforming variables: `transforms`
+* subset rows: `rowSelection`
+* drop variables: `varsToKeep` or `varsToDrop`
+* create simple factors: use `factor` function with `transforms` 
+
+## Logging and Exponentiation
+
+```{r logging_exponentiating, eval=FALSE, size = "large", tidy = FALSE}
+rxDataStep(myData, 
+           transforms = list(ln_x = log(x),
+                             exp_x = exp(x))
+)
+```
+
+## A More Advanced Transformation
+
+```{r scaling_example, eval = FALSE, tidy = FALSE}
+djiaScaledXdf <- tempfile(fileext = ".xdf")
+
+# Calculate the minimum and maximum
+volumeMin <- rxGetInfo(djiaXdf, getVarInfo = TRUE)$varInfo$Volume$low
+volumeMax <- rxGetInfo(djiaXdf, getVarInfo = TRUE)$varInfo$Volume$high
+
+# Make the transformation (and drop a few variables, too)
+rxDataStep(inData = djiaXdf, 
+           outFile = djiaScaledXdf,
+           varsToKeep = c("Date", "Open", "High", "Low", "Close", "Volume"),
+           transformObjects = list(volumeMin = volumeMin, 
+                                   volumeMax = volumeMax),
+           transforms = list(VolumeScaled = 
+               (Volume - volumeMin) / (volumeMax - volumeMin))
+)
+
+
+```
+
+## First: Load Example Data
+
+```{r load_DJIA_data, tidy = FALSE}
+# First, set up pointers to the source XDF file
+sourcePath <- file.path(rxGetOption("sampleDataDir"), "DJIAdaily.xdf")
+
+# And a temporary file
+djiaXdf <- tempfile(fileext = ".xdf")
+
+# Import from the source file to our temporary one, convert Date to a Date
+rxDataStep(inData = sourcePath,
+           outFile = djiaXdf,
+           transforms = list(Date = as.Date(Date)),
+           overwrite = TRUE
+)
+```
+
+## Examine XDF Info
+
+```{r examine_local_copy_inf, output.max=12, tidy = FALSE}
+rxGetInfo(djiaXdf, getVarInfo = TRUE)
+```
+
+## Examine XDF Data
+
+```{r examine_local_copy_data, output.max=12, tidy = FALSE}
+rxDataStep(djiaXdf, numRows = 10)
+```
+
+
+## Scale a Single Variable
+```{r scale_one, tidy = FALSE}
+djiaScaledXdf <- tempfile(fileext = ".xdf")
+
+# Calculate the minimum and maximum
+volumeMin <- rxGetInfo(djiaXdf, getVarInfo = TRUE)$varInfo$Volume$low
+volumeMax <- rxGetInfo(djiaXdf, getVarInfo = TRUE)$varInfo$Volume$high
+
+# Make the transformation (and drop a few variables, too)
+rxDataStep(inData = djiaXdf, 
+           outFile = djiaScaledXdf,
+           varsToKeep = c("Date", "Open", "High", "Low", "Close", "Volume"),
+           transformObjects = list(volumeMin = volumeMin, 
+                                   volumeMax = volumeMax),
+           transforms = list(VolumeScaled = 
+               (Volume - volumeMin) / (volumeMax - volumeMin))
+)
+
+```
+
+
+
+## Function to Scale Multiple Variables
+
+```{r scale_many, tidy = FALSE}
+
+# Define a custom scaling function.
+scaleVars <- function(dataList) {
+
+    # The variables we want to scale are now elements in dataList. 
+    for(i in names(dataList)) {
+
+        # For each variable "price", create a new variable "priceScaled"
+        dataList[[paste0(i, "Scaled")]] <- 
+
+            # Both dataList and varInfo can be indexed by the variable's
+            # name, represented here as i
+            (dataList[[i]] - varInfo[[i]]$low) / (varInfo[[i]]$high - varInfo[[i]]$low)
+    }
+    # Return dataList with the new scaled variables
+    dataList
+}
+```
+
+## Using the Custom Scaling Function
+
+```{r rxGetInfo, tidy = FALSE}
+# Collect all of the mins and maxes of the variables
+DJinfo <- rxGetVarInfo(djiaXdf)
+```
+
+```{r rxGetInfo_output, echo = FALSE}
+DJinfo
+```
+
+
+## Using the Custom Scaling Function
+
+```{r use_scaleVars, tidy = FALSE}
+
+# Use rxDataStep to apply the scaleVars function
+rxDataStep(inData = djiaXdf, 
+           outFile = djiaScaledXdf,
+           varsToKeep = c("Date", "Open", "High", "Low", "Close", "Volume"),
+           transformFunc = scaleVars,
+           transformVars = c("Open", "High", "Low", "Close", "Volume"),
+           transformObjects = list(varInfo = DJinfo),
+           overwrite = TRUE
+)
+
+```
+
+```{r scaleVars_results, echo = FALSE, tidy = FALSE}
+rxDataStep(djiaScaledXdf, 
+           varsToDrop = c("Date", "Open", "High", "Low", "Close", "Volume"),
+           numRows = 6)
+
+```
+
+## Lagging: Example Data
+
+```{r naive_lag_data, echo = FALSE, tidy = FALSE, output.max = 14}
+
+# Generate some sample data
+lagTestData <- data.frame(date = seq(as.Date("2015-01-01"), 
+                                     by = "1 day",
+                                     length.out = 12),
+                          chunkID = (0:11 %/% 3) + 1, # Deal with it
+                          Price = 1:12)
+
+# Import to an XDF with four chunks
+lagTestXdf <- tempfile(fileext = ".xdf")
+
+# Load in chunks of 3 rows at a time
+for (i in c(1, 4, 7, 10)) {
+    rxImport(inData = lagTestData[i:(i + 2), ],
+             outFile = lagTestXdf,
+             append = file.exists(lagTestXdf))
+}
+
+rxDataStep(lagTestXdf, numRows = 12)
+
+```
+
+## Lagging: Naïvely
+
+```{r naive_lag_demo, tidy = FALSE}
+rxDataStep(inData = lagTestXdf, outFile = lagTestXdf,
+           transforms = list(
+               previousPriceNaive = c(NA, Price[-length(Price)])),
+           overwrite = TRUE
+)
+```
+
+```{r naive_lag_results, output.max = 8, echo = FALSE}
+rxDataStep(lagTestXdf)
+```
+
+
+## Lagging: transformFunc
+
+```{r lag_func, tidy = FALSE}
+
+lagVar <- function(dataList) { 
+
+    # Is this the first row in the entire dataset?
+    if(.rxStartRow == 1) {
+        # If so, the first value should be NA; drop the last value
+        dataList[[newName]] <- c(NA, dataList[[varToLag]][-.rxNumRows]) 
+    } else {
+        # Otherwise, get the last value from the previous chunk; drop the last value
+        dataList[[newName]] <- c(.rxGet("lastValue"),
+                                 dataList[[varToLag]][-.rxNumRows]) 
+    }
+
+    # Make the last value available for the next chunk
+    .rxSet("lastValue", dataList[[varToLag]][.rxNumRows])
+    # Return dataList with the new variable
+    dataList
+}
+
+```
+
+## Lagging: transformFunc
+
+```{r sort_lagVar, echo = FALSE}
+lagTestSorted <- tempfile(fileext = ".xdf")
+
+rxSort(inData = lagTestXdf,
+       outFile = lagTestSorted,
+       sortByVars = "date",
+       overwrite = TRUE)
+
+```
+
+```{r use_lagVar, tidy = FALSE, output.max = 7}
+
+# Be sure the dataset is sorted chronologically
+rxDataStep(inData = lagTestSorted,
+           transformObjects = list(
+               varToLag = "Price", 
+               newName = "previousPrice"), 
+           transformFunc = lagVar,
+           overwrite = TRUE)
+```
+
+
+## Lagging: By Merging
+
+```{r lag_by_merging, tidy = FALSE, output.max = 15}
+
+# Create a new dataset with every date shifted forward one day
+lagTestShifted <- tempfile(fileext = ".xdf")
+rxDataStep(inData = lagTestXdf, 
+           outFile = lagTestShifted,
+           varsToKeep = c("date", "Price"),
+           transforms = list(date = date + 1))
+
+# Merge on the original and shifted dates
+rxMerge(inData1 = lagTestXdf, 
+        inData2 = lagTestShifted,
+        outFile = lagTestShifted,
+        matchVars = "date", 
+        type = "left", 
+        duplicateVarExt = c("", "MergeLagged"),
+        overwrite = TRUE
+)
+
+```
+
+
+
+## Lagging: By Merging
+
+```{r lag_by_merging_results, echo = FALSE, tidy = FALSE, output.max = 14}
+
+rxDataStep(lagTestShifted)
+
+```
+
+
+## Simple Factors
+
+```{r simple_factor, eval = FALSE, tidy = FALSE, output.max = 12}
+rxDataStep(inData = djiaXdf,
+           outFile = djiaFactor,
+           transforms = list(
+               DayOfWeekFactor = factor(DayOfWeek,
+                  levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")))
+)
+
+```
+
+## Create a Factor with rxFactors
+
+```{r create_factor, echo = FALSE, tidy = FALSE}
+djiaScrambled <- tempfile(fileext = ".xdf")
+```
+
+```{r scramble, tidy = FALSE}
+
+# First, I'm going to scramble the Dow Jones dataset, so that we can see
+# how the order of values affects the order of levels
+rxSort(inData = djiaXdf,
+       outFile = djiaScrambled,
+       sortByVars = "Volume")
+
+# Next, extract Year from Date
+rxDataStep(inData = djiaScrambled, 
+           outFile = djiaScrambled,
+           transforms = list(charYear = substr(Date, 1, 4)),
+           overwrite = TRUE)
+
+rxFactors(inData = djiaScrambled, 
+          outFile = djiaScrambled,
+          factorInfo = list( factorYear = list(varName = "charYear") ),
+          overwrite = TRUE)
+
+```
+
+## Aggregate by Factor
+
+```{r aggregate_by_factor_fake, eval = FALSE, tidy = FALSE}
+rxCube(Open ~ factorYear, data = djiaScrambled)
+```
+
+```{r aggregate_by_factor_output, echo = FALSE, tidy = FALSE}
+as.data.frame(rxCube(Open ~ factorYear, data = djiaScrambled))
+```
+
+
+## Sort Factor
+
+```{r sort_factor, tidy = FALSE}
+rxFactors(inData = djiaScrambled, 
+          outFile = djiaScrambled,
+          factorInfo = list(
+              factorYear = list(sortLevels = TRUE) ),
+          overwrite = TRUE)
+```
+
+```{r sort_factor_fake_output, eval = FALSE, tidy = FALSE}
+rxCube(Open ~ factorYear, data = djiaScrambled)
+```
+
+```{r sort_factor_output, echo = FALSE, tidy = FALSE}
+as.data.frame(rxCube(Open ~ factorYear, data = djiaScrambled))[1:6, ]
+```
+
+## Custom Order
+
+```{r custom_order, tidy = FALSE}
+even_odd <- as.character(c(seq(1928, 2010, by = 2), 
+                           seq(1929, 2009, by = 2)))
+
+rxFactors(inData = djiaScrambled,
+          outFile = djiaScrambled,
+          factorInfo = list(factorYear = list(newLevels = even_odd)),
+          overwrite = TRUE
+)
+```
+
+```{r custom_order_fake_output, eval = FALSE}
+rxCube(Open ~ factorYear, data = djiaScrambled)
+```
+
+```{r customer_order_output, echo = FALSE, tidy = FALSE}
+as.data.frame(rxCube(Open ~ factorYear, data = djiaScrambled))[1:6, ]
+
+```
+
+## Recode Levels
+
+```{r recode_newlevels, tidy = FALSE}
+djiaRecode <- tempfile(fileext = ".xdf")
+
+rxFactors(inData = djiaXdf, 
+          outFile = djiaRecode,
+          factorInfo = list(DayCombined = list( 
+              varName = "DayOfWeek",
+              newLevels = list(Monday = "Monday",
+                               Midweek = "Tuesday", Midweek = "Wednesday", Midweek = "Thursday",
+                               Friday = "Friday")))
+)
+```
+
+```{r recode_fake_output, eval = FALSE}
+rxCube(Open ~ DayCombined, data = djiaRecode)
+```
+
+```{r recode_output, echo = FALSE}
+as.data.frame(rxCube(Open ~ DayCombined, data = djiaRecode))
+```
+
+## Recode otherLevel
+
+```{r recode_otherlevel, tidy = FALSE}
+
+rxFactors(inData = djiaXdf, 
+          outFile = djiaRecode,
+          factorInfo = list(
+              DayCombined = list(newLevels = list(Monday = "Monday",
+                                                  Friday = "Friday"),
+                                 otherLevel = "Midweek",
+                                 varName = "DayOfWeek")),
+          overwrite = TRUE)
+
+
+
+```
+
+```{r otherlevel_fake_output, eval = FALSE}
+rxCube(Open ~ DayCombined, data = djiaRecode)
+```
+
+```{r otherlevel_output, echo = FALSE}
+as.data.frame(rxCube(Open ~ DayCombined, data = djiaRecode))
+```

@@ -1,0 +1,595 @@
+---
+title: "Merging Datasets with SQL and RRE (draft 5)"
+author: "Bob Horton"
+date: "Wednesday, July 1, 2015"
+output: html_document
+---
+
+```{r setup, echo=FALSE, warning=FALSE}
+rxOptions(reportProgress=0)
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+```{r lib, echo=FALSE}
+runSQL <- function(myQuery){
+  library(RSQLite)
+  db_file <- file.path("C://Users//rhorton//OneDrive - Microsoft//Revo//datacamp", 
+                       "top3_airlines_Jan_2000.sqlite3")
+  db <- dbConnect(SQLite(), db_file)
+  tbl <- dbGetQuery(db, myQuery)
+  dbDisconnect(db)
+  return(tbl)
+}
+demoSQL <- function(myQuery, n=6){
+  tbl <- runSQL(myQuery)
+  cat(myQuery)
+  knitr::kable(head(tbl, n=n))
+}
+```
+For data analysis and visualization, we typically work with data in a single rectangular table, where the rows are cases (sometimes called examples, records, data points or observations), and the columns are attributes (also known as features or variables). In supervised learning approaches, like linear or logistic regression, each case usually has some sort of outcome or classification, and the analytical challenge is to understand how the attributes are associated with outcome or class.
+
+As an example, let's look at a dataset of [airline flights](http://stat-computing.org/dataexpo/2009). We will assemble a variety of attributes about the flight, the aircraft, the airline, the airports, etc. We'll start with some of this information in several tables in a relational database, and later we will add add more attributes by merging additional tables outside of the database.
+
+Most structured data is stored in relational databases, which are typically designed to keep information about different types of entities in separate tables. In this example, data about aircraft are in a separate table from data about flights. This approach to structuring data is called "normalization" in database parlance (though we need to be careful with that term because the words "normal" and "normalization" mean something completely different in statistics.) Databases are designed to avoid repeating information; for example, the full name of an airline is stored in only one place (in the carrier table). Avoiding repetition saves storage space, of course, but it is also important for data integrity; if the name of the airline were stored in more than one place, it might be possible for the different copies of that information to get out of sync, and then you would have a problem deciding which one was correct.
+
+This is an Entity-Relationship Diagram showing a simplified version of our database schema. It shows the names and types of information that is stored in each table, and indicates how the tables are related. 
+```{r database_schema, engine="dot", fig.cap="Simplified Schema", cache=TRUE, eval=FALSE, echo=FALSE}
+# This is the graphviz code to construct the ERD; it was edited in InkScape before saving to PNG.
+# dot -Tsvg airlines_ERD_html.gv > airlines_ERD_hmtl.svg
+digraph entity_relationship_diagram {
+  graph[overlap=false, splines=true, clusterrank="local", rankdir=LR]
+    
+  "Flight" [shape="none", label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0">
+								<TR><TD BGCOLOR="#C0C0C0" PORT="f0" BORDER="1" COLSPAN="2"><B>Flight</B></TD></TR>
+                <TR><TD PORT="f5w" ALIGN="left"><I>UniqueCarrier</I></TD><TD PORT="f5e">text</TD></TR>
+                <TR><TD PORT="f1" ALIGN="left"><I>FlightNum</I></TD><TD>int</TD></TR>
+                <TR><TD PORT="f2" ALIGN="left"><I>Year</I></TD><TD>int</TD></TR>
+                <TR><TD PORT="f3" ALIGN="left"><I>Month</I></TD><TD>int</TD></TR>
+                <TR><TD PORT="f4" ALIGN="left"><I>DayOfMonth</I></TD><TD>int</TD></TR>
+                <TR><TD PORT="f7w" ALIGN="left"><I>Origin</I></TD><TD PORT="f7e">text</TD></TR>
+                <TR><TD PORT="f8w" ALIGN="left">Dest</TD><TD PORT="f8e">text</TD></TR>
+                <TR><TD PORT="f6w" ALIGN="left">TailNum</TD><TD PORT="f6e">text</TD></TR>
+                <TR><TD PORT="f9" ALIGN="left">DayOfWeek</TD><TD>int</TD></TR>
+                <TR><TD PORT="f10" ALIGN="left">ArrTime</TD><TD>int</TD></TR>
+                <TR><TD PORT="f11" ALIGN="left">DepTime</TD><TD>int</TD></TR>
+                <TR><TD PORT="f12" ALIGN="left">ArrDelay</TD><TD>int</TD></TR>
+    </TABLE>>
+	];
+ 
+
+  "Carrier" [shape="none", label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0">
+								<TR><TD BGCOLOR="#C0C0C0" BORDER="1" COLSPAN="2" PORT="f0"><B>Carrier</B></TD></TR>
+								<TR><TD PORT="f1" ALIGN="left"><I>Code</I></TD><TD>text</TD></TR>
+								<TR><TD PORT="f2" ALIGN="left">Description</TD><TD>text</TD></TR>
+    </TABLE>>
+	];
+    
+	"Plane" [shape="none", label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0">
+								<TR><TD BGCOLOR="#C0C0C0" BORDER="1" COLSPAN="2" PORT="f0"><B>Plane</B></TD></TR>
+								<TR><TD PORT="f1" ALIGN="left"><I>tailnum</I></TD><TD>text</TD></TR>
+								<TR><TD PORT="f2" ALIGN="left">model</TD><TD>text</TD></TR>
+								<TR><TD PORT="f3" ALIGN="left">year</TD><TD>int</TD></TR>
+    </TABLE>>
+	];
+
+	"Airport" [shape="none", label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0">
+								<TR><TD BGCOLOR="#C0C0C0" BORDER="1" COLSPAN="2" PORT="f0"><B>Airport</B></TD></TR>
+								<TR><TD PORT="f1" ALIGN="left"><I>iata</I></TD><TD>text</TD></TR>
+								<TR><TD PORT="f2" ALIGN="left">airport</TD><TD>text</TD></TR>
+								<TR><TD PORT="f2" ALIGN="left">city</TD><TD>text</TD></TR>
+								<TR><TD PORT="f2" ALIGN="left">state</TD><TD>text</TD></TR>
+								<TR><TD PORT="f2" ALIGN="left">country</TD><TD>text</TD></TR>
+								<TR><TD PORT="f2" ALIGN="left">lat</TD><TD>float</TD></TR>
+								<TR><TD PORT="f2" ALIGN="left">long</TD><TD>float</TD></TR>
+    </TABLE>>
+	];
+
+	subgraph cluster_database {label="database" "Flight" "Plane" "Carrier"}
+
+	{ rank=max "Airport" }
+
+	"Flight":f6e:e -> "Plane":f1 [arrowhead=odot, arrowtail=crow, dir=both, label="flies"]
+	"Flight":f5e -> "Carrier":f1 [arrowhead=odot, arrowtail=crow, dir=both, label="offers"]
+
+	"Flight":f7e -> Airport:f1 [minlen=2, arrowhead=odot, arrowtail=crow, dir=both, label="takes off"]
+	"Flight":f8e -> Airport:f1 [minlen=2, arrowhead=odot, arrowtail=crow, dir=both, label="lands"]
+
+}
+
+
+```
+
+![ERD](images/airlines_ERD_edited_1.png)
+
+A "unique key" is a column or set of columns that can be used to identify any specific row in a table. A simple example is a table for looking up full names from abbreviations; as long as the abbreviations are unique, it should be straightforward to look up what they stand for in a table. Other tables may require compositing information from multiple columns in order to uniquely identify a row. 
+
+The primary keys for each table are shown in italics. Some keys are simple, with a code stored in a single column; for example, the Carrier table lets you look up the full name of an airline from its two-letter abbreviation. The Flight table provides an example where identifying a particular row is more complicated. Here each row represents one leg of a flight. There is a column called Flightnum, but it is not a unique ID; a given flight may have multiple legs (Louisville to Nashville, and Nashville to Dallas), and multiple airlines may use the same number for their own flights. Here we use an SQL query to bring up some examples:
+
+
+```{r flights_composite_key, echo=FALSE}
+# https://en.wikipedia.org/wiki/Flight_number
+
+demoSQL("SELECT UniqueCarrier, FlightNum, Year, Month, DayofMonth, DepTime, TailNum, Origin, Dest  
+  FROM flight WHERE Year=2000 AND Month=1 AND DayofMonth=1 AND FlightNum=789
+	ORDER BY UniqueCarrier, DepTime;", 15)
+
+# example flight numbers: 198, 683, 789
+```
+
+Note that both Delta and Southwest have a flight number 789, but they represent totally different routes. Also an airline may run the same flight number on multiple days of the week, so if you want to specify a particular leg of a particular flight on a particular airline on a particular day, you will need a combination of columns to use as a key; this is an example of a "compound key". 
+
+If you wanted to merge information about flights with information about individual passengers, you would need this kind of compound key to determine which passengers were on the same airplane at the same time.
+
+Our examples will focus on adding information to the flight table, so various columns of the flight table will be used as keys in other tables. To look up the full name of an airline, for example, you can match the `Unique Carrier` column in the Flight table to the `Code` column in the Carrier table; both use the same official 2-letter airline codes.
+
+For analysis, we need to merge data from all these tables into one big analysis table, so that all aspects of each flight are collected in a row. In database terms, a combined table like this is described as being "denormalized". These tables usually do contain repeated information; for example, names of airlines (like "Aerounion Aerotransporte de Carga Union SA de CV") appear in the table repeatedly, once for every flight run by that airline.
+
+But we won't stop there. We will go on to mix in data from outside the database as well. We can relate other tables to the data from our database as long as we have the appropriate keys. This diagram shows how a new external table `Airport` relates to our Flights data:
+
+![ERD](images/airlines_ERD_edited_2.png)
+
+## Review of Types of Merge
+
+For tables inside a relational database, merging is handled quite nicely by SQL. We will use the rxMerge function from RRE to perform joins between tables outside of the database. We will make some comparisons to the `merge` function in base R, but our emphasis will be on the approaches that can scale up to large data sets. Regardless of the technologies applied, let's take a moment to review some general ideas about merging tables, using toy examples.
+
+Here we have two tables:
+
+```{r toy_merges_setup, echo=FALSE}
+uc <- data.frame(id=1:6, letter=LETTERS[1:6])
+scrambled_id <- sample(4:9)
+lc <- data.frame(id=scrambled_id, letter=letters[scrambled_id])
+```
+
+```{r toy_merge_0}
+uc
+lc
+```
+
+Table "uc" contains a series of six consecutive upper case letters ('A' through 'F'). The ID of each letter is its position in the alphabet. Table "lc" has six consecutive lowercase letters ('d' through 'i'), and the IDs are their alphabetical positions, but the order of the rows has been scrambled. There are only three letters for which we have both upper case and lower case versions, and each table contains three letters that do not appear in the other table.
+
+We'll show several varieties of merges using these tables. First we'll do an "inner join", which combines the information from rows in both tables that share a common ID. We'll do the join using SQL (the sqldf package lets us run SQL queries on dataframes, without explicitly setting up a database), then we use the merge function from base R and the rxMerge function from RRE to perform the same operation. 
+```{r toy_merge_1}
+library(sqldf)
+sqldf("SELECT * FROM uc JOIN lc USING (id)")
+merge(uc, lc, by="id")
+rxMerge(uc, lc, matchVars = "id")
+```
+
+Here we are just using rxMerge on small dataframes that fit easily into memory; later we'll show how to use it for more realistic examples where we create external dataframes on disk.
+
+This is the same rxMerge command with the parameter names and some of the important defaults spelled out:
+
+```
+rxMerge(inData1 = uc, inData2 = lc, matchVars = "id", type="inner")
+```
+In an "inner" join, we only keep the rows for which the joining key ("id") exists in both tables. This is the default join in SQL as well; we could have been more explicit by writing
+
+```
+SELECT * FROM uc INNER JOIN lc USING (id)
+```
+
+If we want to include all the rows from one table, regardless of whether those IDs appear in the second table, we can use a one-sided outer join. In this case, we'll do a "left outer join" where all the rows from the first table are retained, and any rows whose keys match in the second table will have additional variable values added. Rows that do not have matching keys in the second table will shoq these new variables as missing.
+
+```{r left_outer_joins}
+# SQL
+sqldf("SELECT uc.id, uc.letter letter_uc, lc.letter letter_lc FROM uc LEFT OUTER JOIN lc USING (id)")
+
+# merge from base R
+merge(uc, lc, by="id", all.x=TRUE)
+
+# rxMerge
+rxMerge(inData1 = uc, inData2 = lc, matchVars = "id", type="left")
+```
+
+
+There are a total of six types of joins supported by rxMerge: "inner", three varieties of outer join ("left", "right", "full"), and two types that paste all rows or columns from two tables together ("union" and "oneToOne"). The last two types of merges ("union" and "oneToOne") are equivalent to "rbind" and "cbind" in R; union pastes two tables end to end (binding rows), and "oneToOne" pastes them side to side (binding columns). SQL has a "UNION" operation, but there is no real equivalent to a "cbind"
+
+```{r other_merges}
+rxMerge(inData1 = uc, inData2 = lc, matchVars = "id", type="right")
+
+rxMerge(inData1 = uc, inData2 = lc, matchVars = "id", type="union")
+sqldf("SELECT * FROM uc UNION SELECT * FROM lc")
+rbind(uc, lc)
+
+rxMerge(inData1 = uc, inData2 = lc, matchVars = "id", type="oneToOne")
+cbind(uc, lc)
+```
+
+### Merging multiple tables
+
+When you provide a list of RxXdfData objects as the inData1 parameter to rxMerge, it joins them all by the specified column:
+
+```{r multiple_join}
+d1 <- data.frame(id=1:5, count=11:15)
+d2 <- data.frame(id=1:5, price=21:25)
+d3 <- data.frame(id=1:5, weight=31:35)
+
+xd1 <- rxImport(d1, outFile="xd1.xdf", overwrite=TRUE)
+xd2 <- rxImport(d2, outFile="xd2.xdf", overwrite=TRUE)
+xd3 <- rxImport(d3, outFile="xd3.xdf", overwrite=TRUE)
+
+xd <- rxMerge( list(xd1, xd2, xd3), matchVars="id")
+xd
+```
+
+You can achieve a similar result in SQL using a series of joins:
+```{r multiple_join_sql}
+sqldf("SELECT * FROM d1 JOIN d2 USING (id) JOIN d3 USING (id)")
+```
+
+This is a more complicated example:
+
+```{r multi_merge_more_complex}
+library(lubridate)
+dates <- ymd('2016-01-01') + days(0:9)
+
+set.seed(123)
+d0 <- data.frame(date=dates, day=wday(dates, label=TRUE))
+d1 <- data.frame(date=sample(dates, 5), furniture=round(rnorm(5, mean=300, sd=50),2))
+d2 <- data.frame(date=sample(dates, 5), linens=round(rnorm(5, mean=80, sd=20),2))
+d3 <- data.frame(date=sample(dates, 5), kitchen=round(rnorm(5, mean=100, sd=25),2))
+
+xd0 <- rxImport(d0, outFile="xd0.xdf", overwrite=TRUE)
+xd1 <- rxImport(d1, outFile="xd1.xdf", overwrite=TRUE)
+xd2 <- rxImport(d2, outFile="xd2.xdf", overwrite=TRUE)
+xd3 <- rxImport(d3, outFile="xd3.xdf", overwrite=TRUE)
+
+rxMerge( list(xd1, xd2, xd3), matchVars="date", type="full")
+
+rxMerge( list(xd0, xd1, xd2, xd3), matchVars="date", type="left")
+xd[is.na(xd)] <- 0
+```
+
+Merging two data sets is a special case that gives you more flexibility. For example, you can use newVarNames1 and newVarNames2 to make the names match; with a list of datasets, the merge columns must already have the same name.
+
+## Merging Tables in the Database
+
+Now lets return to our airline example. We want to pull together the information from all three database tables (`flight`, `carrier`, and `plane`) into a single table. We know that all of the carriers from the `flight` table are listed in the `carrier` table. However, the `plane` table is incomplete; not every aircraft tailnumber listed in `flight` appears in `plane`. This means we can do a normal inner join with `carrier`, but we need to do a one-sided outer join with `flight`. This way all the flights will be retained, even if some of them are missing information about the plane.
+
+
+```{r airline_join_sql, echo=FALSE, message=FALSE}
+sql <- "SELECT flight.*, carrier.Description Carrier, plane.* FROM flight 
+                          INNER JOIN carrier
+                            ON flight.UniqueCarrier = carrier.Code
+                          LEFT OUTER JOIN plane
+                        	  ON flight.TailNum = plane.tailnum"
+
+
+demoSQL(sql)
+
+```
+
+It is very straightforward to use SQL from RRE. For tables in the database, the entire denormalization process can be embodied in an SQL statement that gets called when the data is loaded. The SQL code is placed in the "sqlQuery" parameter to the RxOdbcData object, which itself is a parameter to rxImport.
+
+```{r airline_files}
+data_dir <- "C:/Users/rhorton/OneDrive - Microsoft/Revo/datacamp/airline_data"
+airlines_db <- "top3_airlines_Jan_2000.sqlite3"
+airlines_xdf <- "top3_airlines_Jan_2000_analysis.xdf"
+```
+```{r connect_odbc}
+connectionString <- sprintf("Driver={SQLite3 ODBC Driver};Database=%s", airlines_db)
+
+odbc_data <-
+  RxOdbcData(sqlQuery = "SELECT flight.*, carrier.Description Carrier, plane.* 
+                          FROM flight 
+                          JOIN carrier
+                            ON flight.UniqueCarrier = carrier.Code
+                        	LEFT OUTER JOIN plane
+                        	  ON flight.TailNum = plane.tailnum",
+             connectionString = connectionString)
+```
+
+We can examine the results of the database query by calling the `head` function on the RxOdbcData object; `head` is a generic function that has a method defined for the RxOdbcClass. This method takes an argument `n` that lets you specify a number of rows to return (the default is 6, as with the `head` method for dataframes); it returns a dataframe containing the first `n` rows from the data source.
+
+```{r head_odbc_data}
+knitr::kable(head(odbc_data))
+```
+
+Now we can import the whole dataset over the ODBC connection into XDF format. In this example, the columns are all read as integer or character types. We could set the `stringsAsFactors` argument to TRUE so that all of the character columns would be converted to factors, but let's be more selective. Here we use the `colClasses` parameter to specify the data type of each column. We start by using the `head` function on the odbc connection to read a small data frame, so that R will determine the column classes automatically; these are saved in a named character vector. Then we modify these types to specify values other than the defaults. Here we set some columns to be factors, and others to be 16 bit unsigned integers. Note that there are more data types in XDF than in base R; here we use 16 bit unsigned integers to hold values that we know will never be larger than the max value that can be held in 16 bits (65535). These columns wil thus take less space in the XDF file than the default integer size, which is 32 bits.
+
+For more detailed control, we can use the `colInfo` parameter. Here we demonstrate two uses; we make some more columns into factors, but in this case we can also set factor levels, including their order.
+
+We also use this mechanism to change the names of some columns; for example, the merged dataset has one column called `Year` (capital Y), which is the year of the flight, and another called `year` (lower case 'y') which is the year the aircraft was manufactured. We'll change this second `year` column to `aircraft_year`.
+
+Note that the colInfo approach is more detailed than `colClasses`, and it takes precedence. That means that we did not neet to set the class of `Carrier` in `colClasses`, since it will be overridden by `colInfo` anyway.
+
+
+```{r import_odbc, eval=FALSE}
+
+colClasses <- sapply(head(odbc_data, n=1000), class)
+colClasses[c("engine_type")] <- "factor"
+colClasses[c("Year", "year", "DayOfMonth", "DayOfWeek", "DepTime", "ArrTime")] <- "uint16"
+
+colInfo <- list(
+  UniqueCarrier = list( type="factor", levels=c("DL", "UA", "WN")),
+  Carrier = list( type="factor", levels=c("Delta Air Lines Inc.", "United Air Lines Inc.", "Southwest Airlines Co.")),
+  year = list( newName="plane_year")
+)
+rxImport(odbc_data, airlines_xdf, colClasses=colClasses, colInfo=colInfo, overwrite = TRUE)
+
+```
+
+
+If you want to pull a table straight from the database without doing any joins, there is a shortcut; just pass the table name in the "table" argument to RxOdbcData. Note that you can use either the "table" or the "sqlQuery" argument, but not both at the same time. 
+
+This gives us an alternative approach to pulling the denormalized table from the database; you can define a view in your database that performs the join, then use the view with the `table` argument.
+
+```{r query_a_view, eval=FALSE}
+runSQL("CREATE VIEW analysis_view AS 
+              SELECT flight.*, carrier.Description Carrier, plane.* FROM flight 
+                          JOIN carrier
+                            ON flight.UniqueCarrier = carrier.Code
+                          LEFT OUTER JOIN plane
+                        	  ON flight.TailNum = plane.tailnum")
+
+```
+```{r an_RxOdbcData_with_a_view}
+view_data <- RxOdbcData(table = "analysis_view", connectionString = connectionString)
+
+knitr::kable(head(view_data))
+```
+
+(These approaches have a minor difference in how they interpret capitalization of names:
+`setdiff(names(head(view_data)), names(head(odbc_data)))` shows that in one case columns "tailnum" and "year" are disambiguated to tailnum:1" and "year:1", while in the other case they are not. These column names are only duplicates if character case is ignored.)
+
+Of course you can also use sqlQuery to select just the aspects of your view that you need for analysis, just as with regular database tables.
+
+Note that the sqlQuery argument can only be used for reading data; it does not support INSERT or UPDATE statements for example, nor does it support multiple statements separated by semicolons. You can give it compound queries, as long as they result in a single table.
+
+## Merging Tables Outside the Database
+
+One of the potentially creative aspects of statistical analysis is deciding what features or attributes to include. You might make iteresting and important discoveries about your business if you decide to add attributes about the weather or the stock market to your sales data. The kinds of attributes you decide to study depend on your business, your imagination, and the data you have available.
+
+Today's networked world offers an unprecedented wealth of available data. Unfortunately, most of it is not in your database. This is why RRE has functions to perform merges on data in dataframes and XDF files, since these can come from a variety of data sources. Let's look at how we can use the rxMerge function to do the same types of table joining operations we can do in SQL, but for data outside the database.
+
+The airline flights data we loaded from ODBC contains columns for the origin and destination airports, identified by their IATA airport code. Let's embellish this information by adding the latitude and longitude of each airport, so we can plot these connections on a map.
+
+The information about airports is contained in a file cleverly named "airports.csv". Let's examine the first few lines of this file:
+```{r examine_airports, echo=FALSE}
+knitr::kable(head(read.csv(file.path(data_dir, "airports.csv"))))
+```
+
+
+![ERD](images/airlines_ERD_edited_2.png)
+
+We see that the airlines table has a column called "iata", which contains the International Air Transport Association 3-letter code for each airport. We will match that with the 'Origin' and 'Dest' columns of our flights data, which conveniently use the same 3-letter codes. Since the columns have different names, we need to (temporarily) change one to match the other; the 'newVarNames1' and 'newVarNames2' parameters handle this on-the-fly renaming. In this case we will rename `iata` to `Origin` when merging on origin, and rename it to `Dest` when merging on destination. Since there are two airports associated with each flight leg (origin and destination), we need to rename the columns so that we can tell which airport information is about the origin airport, and which is about the destination. We do this with the `newVarNames2` parameter.
+
+```{r merge_airport_locations, cache=TRUE}
+# airport_data <- RxTextData(file.path(data_dir, "airports.csv"))
+airports <- read.csv(file.path(data_dir, "airports.csv"), stringsAsFactors=FALSE)
+merged_origin_xdf <- file.path(data_dir, "airlines_with_origin_airport_info.xdf")
+analysis_xdf <- file.path(data_dir, "airlines_with_locations.xdf")
+merged_origin <- rxMerge(airlines_xdf, airports, outFile=merged_origin_xdf,
+        matchVars="Origin",
+        varsToDrop2 = c("country"),
+        newVarNames2=c(iata="Origin", airport="orig_airport", 
+                       city="orig_city", state="orig_state",
+                       lat="orig_lat", long="orig_long"), 
+        overwrite=TRUE)
+
+merged_again <- rxMerge(merged_origin, airports, outFile=analysis_xdf,
+        matchVars="Dest",
+        varsToDrop2 = c("country"),
+        newVarNames2=c(iata="Dest", airport="dest_airport", 
+                       city="dest_city", state="dest_state",
+                       lat="dest_lat", long="dest_long"), 
+        overwrite=TRUE)
+```
+
+Here we used the two-tables at a time approach, because we had to do the more complicated steps of modifying the names of the key columns so that they would match for the join.
+
+## Analysis and visualization examples
+
+### Map routes for carriers
+
+Now that we have locations for the origin and destination of each flight in the form of latitude and longitude, we can do some map-based visualizations. 
+
+```{r map_routes_for_carriers}
+factored_xdf <- RxXdfData(file.path(data_dir, "factored.xdf"))
+rxFactors(inData=merged_again, outFile=factored_xdf, factorInfo=list(
+  Origin=list(sortLevels=TRUE), 
+  Dest=list(sortLevels=TRUE), 
+  UniqueCarrier=list(sortLevels=TRUE)),
+  overwrite=TRUE)
+flightCube <- rxCube(~ Origin:Dest:Carrier, factored_xdf, 
+                     useSparseCube=TRUE, overwrite=TRUE)
+
+# From here down we are working with aggregated data; it is no longer big, so we can handle it in base R. 
+# I lost some of my my merged columns in the aggregation, so I need to merge again.
+connections <- as.data.frame(flightCube)
+connections <- merge(connections, airports, by.x="Origin", by.y="iata")
+connections <- merge(connections, airports, by.x="Dest", by.y="iata", suffixes=c("_orig", "_dest"))
+
+# keep_cols <- c("Dest", "Origin", "Counts", "lat_orig", "long_orig", "lat_dest", "long_dest")
+map_routes_for_carrier <- function(carrier){
+  library(maps)
+  map("state")
+  title(carrier)
+  cnx <- connections[connections$Carrier==carrier,]
+  for (r in 1:nrow(cnx)){
+    myRow <- cnx[r,]
+    with(myRow, lines(c(long_orig, long_dest), c(lat_orig, lat_dest), col="red", lwd=Counts/100))
+  }
+  for (r in 1:nrow(cnx)){
+    myRow <- cnx[r,]
+    with(myRow, points(long_orig, lat_orig, col="blue"))
+  }
+}
+
+map_routes_for_carrier("Delta Air Lines Inc.")
+map_routes_for_carrier("United Air Lines Inc.")
+
+```
+
+### Slightly greater delay for planes heading West.
+
+For a more complex example, we can use the airport location information to engineer a new feature: the (approximate) overall heading of the aircraft when going from the origin to the destination. By the simple expedient of pretending the world is flat and using latitude and longitude as grid coordinates, we can use trigonometry to figure out the slope of the line connecting the origin and destination airports. We can add these approximate headings in a new column in the data table.
+
+```{r longitude_change, cache=TRUE}
+# CODE SHOULD BE RE_DONE IN RRE; dumping to a dataframe is cheating.
+
+analysis_rxxdf <- RxXdfData(analysis_xdf)
+analysis_df <- rxXdfToDataFrame(analysis_rxxdf, maxRowsByCols=3e8)
+
+#' Find the approximate overall heading of a flight.
+#'
+#' This approach assumes the world is flat. It isn't really.
+approx_heading <- function(r){
+  r <- lapply(r[c('dest_lat', 'orig_lat', 'orig_long', 'dest_long')], as.numeric)
+	((180/pi) * atan2( 
+       r[['dest_long']] - r[['orig_long']], r[['dest_lat']] - r[['orig_lat']]
+    ) + 360) %% 360
+}
+
+analysis_df$heading <- apply(analysis_df, 1, approx_heading)
+
+library(ggplot2)
+ggplot(analysis_df, aes(x=heading, y=ArrDelay)) + geom_smooth()
+
+ggplot(analysis_df, aes(x=heading, y=ArrDelay)) + 
+  coord_polar(theta="x", direction=1) + 
+  geom_smooth() + 
+  theme_bw()
+```
+
+((NOTE: Simply converting the smoothed outcome to polar coordinates is not completely satisfactory, because the radius is automatically set to have the lowest value set at the origin. Even the eastbound flights have about a 4 minute average delay; I'd rather have this value determine the radius, but I couldn't get ggplot to do it. 
+
+This is the polar barplot version:))
+
+```{r polar_barplot}
+analysis_df$heading_bucket <- factor(round(analysis_df$heading/10))
+levels(analysis_df$heading_bucket) <- as.character(seq(0, 360, by=10))
+
+library(dplyr)
+plot_me <- analysis_df %>% group_by(heading_bucket) %>% summarize(avg_delay = mean(ArrDelay, na.rm=TRUE))
+plot_me$angle <- as.numeric(as.character(plot_me$heading_bucket))*36
+
+library(ggplot2)
+ggplot(plot_me, aes(x=heading_bucket, y=avg_delay)) +
+  coord_polar(theta="x", direction=1) +
+  geom_bar(stat="identity")
+```
+
+(Note that the boxplot shows medians rather than means; the median delays tend to be negative for eastbound flights, even though the means are postive.)
+
+```{r boxplot}
+
+boxplot(ArrDelay ~ heading_bucket, data=analysis_df, notch=T, ylim=c(-10, 15))
+
+# rm(analysis_df)
+```
+
+### rxMerge Parameters
+Here is the full list of parameters to rxMerge, grouped into categories:
+
+#### Input
+  + inData1: can either specify the first data set to merge (as a file name or an RxXdfData object), or a list of RxXdfData objects to merge sequentially.
+  + inData2: optional second data set; only used if inData1 is not a list.
+  + inFile1, inFile2: These parameters are used by the lower-level function rxMergeXdf, but not by rxMerge.
+
+#### Output
+  + outFile: the name of the XDF file where output wil be stored. If this is NULL, the function returns a dataframe
+  + overwrite: logical value specifying whether the output XDF file should be overwritten if it already exists. The default is FALSE, making it a bit harder to clobber a datafile you already have.
+  + maxRowsByCols: sets a limit on the total size of the data if you have the results returned in a dataframe (by not specifying an outFile).
+  + rowsPerOutputBlock: controls how the output data is split into chunks.
+  + xdfCompressionLevel: controls the level of compression used for the output XDF file.
+
+#### Merging
+  + type: "inner", "left", "right", "full", "oneToOne", "union"
+  + matchVars: specifies one or more columns to be used to match rows in the merge. Note that the tables being merged must both have a column with this name (if you are merging a list of inputs, they all need to have these columns). If the columns have different names in the different tables, you need to modify the names so that they match, using the newVarNames1 and newVarNames2 parameters. If you do not specify either matchVars or type, rxMerge will try to perform a "natural join".
+
+#### Renaming columns
+  + newVarNames1: give new names to the columns of table 1 (in statistics, columns are called "variables", hence newVarName).  Note that you can only rename columns when you are merging just two tables at a time; if you are merging a list of tables, they should all have a common id column (or columns) to start with.
+  + newVarNames2: Give new names to the columns of table 2.
+  + duplicateVarExt: when merging two datasets, you can provide different suffixes that will be automatically added to any columns that have the same names in the two tables, so that the columns in the merged table are unique.
+
+#### Column selection
+As in rxImport, these parameters let you keep or drop only the columns of interest. Note that you have to use either the "keep" or the "drop" approach; you can't use both at the same time for a given table.
+  + varsToKeep1
+  + varsToDrop1
+  + varsToKeep2
+  + varsToDrop2
+
+#### Sorting options
+  + autoSort: This is a logical flag indicating whether rxMerge should automatically sort the datasets before merging. Setting autoSort to FALSE should be considered an advanced option that can save you a little time if you know your data is already sorted. Be aware that if your data is not sorted, or if you tables are not sorted in the same order, you can get completely incorrect results.
+  + missingsLow: logical value indicating whether missing values should be sorted as the lowest value as opposed to the highest value.
+  + decreasing: logical value controlling whether values ahould be sorted in decreasing as opposed to increasing order.
+
+#### Messages
+These options both affect how much information is printed at the console. Since these are messages, neither is returned as function output.
+  + reportProgress: shows information about chunks as they are processed
+  + verbose: adds extra summary messages 
+
+#### Processing
+  + bufferLimit: controls how much RAM to use. The default value of -1 causes the system to try to find a reasonable value automatically.
+
+# Conclusion
+
+The ability to integrate data from disparate sources, including your own databases as well as data from outside sources, opens up tremendous possibilities for visualization and analysis. Merging together the right collection of variables into a common table is an essential step for developing deeper insights into the factors driving the outcomes important to your business.
+
+
+# Bonus Section
+## Comparing rxMerge with merge
+
+### Differences
+
+* Natural join
+
+Natural join will automatically choose column names shared among the tables as the key for the join. You always need to specify matchVars with rxMerge.
+```{r merge_vs_rxMerge}
+d1 <- data.frame(id=1:5, count=11:15)
+d2 <- data.frame(id=1:5, price=21:25)
+
+merge(d1, d2)   #  automatically detects common columns
+sqldf("SELECT * FROM d1 NATURAL JOIN d2")
+```
+
+* Cross Join
+
+Cross joins are not (???) supported by rxMerge. This is probably not something you want to do on a big dataset anyway.
+```{r cross_join}
+merge(d1, d2, by=NULL)
+
+# SQL gives the same result, but not necessarily in the same order.
+sqldf("SELECT * from d1 CROSS JOIN d2")
+```
+
+* merge only joins two tables.
+* merge allows the joining key to have different names in the two tables; in rxMerge you have to be sure the names are the same (though you can convert them on the fly).
+
+<<< REVIEW QUESTION: 
+Match the rxMerge type parameter to the equivalent SQL phrase:
+
+"inner"		INNER JOIN
+"oneToOne"	???
+"left"		LEFT OUTER JOIN
+"right"		RIGHT OUTER JOIN
+"full"		FULL OUTER JOIN
+"union"		UNION
+
+>>>
+
+Now we have gathered and formatted the data we need to study the airline data, and you have learned how to include features from external data sources. We will return to the actual analysis in a later lesson
+
+===
+
+# To Do
+
+* Fix title margins in airline route maps.
+
+* Use RRE for the directional delay analysis (I cheated and used base R). Some other places, too.
+
+* We might want to to pick airlines with different flight patterns (I just picked the top 3)
+  See http://stat-computing.org/dataexpo/2009/posters/hofmann-cook.pdf
+
+# Some Day
+
+* Use MS SQL Server for sql examples (add RIGHT OUTER JOIN, FULL OUTER JOIN). Not sure if you an use SQL Server with sqldf...
+
+* Maybe do a UNION merge with (samples from) multiple years of data?
+
+# Notes:
+
+* The help for the matchVars parameter says "The data sets MUST BE presorted in the same order by these variables." That must only be when autoSort is FALSE.
+
+
+
