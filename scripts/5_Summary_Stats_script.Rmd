@@ -12,20 +12,20 @@ theme_set(theme_bw())
 ```
 
 
-# Data Management with RRE:    
+# Data Management with MRS:    
 # Summary Statistics
 
 
 ## Intro
 
-Welcome back to Data Management with Revolution R Enterprise. In our last
+Welcome back to Data Management with Microsoft R Server. In our last
 session, we learned how to transform multiple variables at once, create
 transformation functions that pass results between chunks, and create and
 modify complex factors.
 
-Throughout the last few sessions, we've occasionally seen some of RRE's
+Throughout the last few sessions, we've occasionally seen some of MRS's
 summary functions in use, like `rxGetInfo` and `rxSummary`.
-In this session, we'll take a closer look at RRE's functions for calculating
+In this session, we'll take a closer look at MRS's functions for calculating
 those summary statistics, as well as tables and correlations.
 
 
@@ -42,7 +42,7 @@ maximum, and the number of valid and missing observations.
 
 ```{r summarize_one}
 
-# Create a pointer to one of RRE's sample XDFs
+# Create a pointer to one of MRS's sample XDFs
 defaultData <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
 
 # Summarize credit score
@@ -121,8 +121,8 @@ the means, and so on.
 ### Groupwise Summary
 
 Now, what if we wanted to know how average credit score had changed over
-the years represented in this data? We can easily calculate group-wise means with
-`rxSummary`. We just have to make a couple modifications to our code:
+the years represented in this data? We can easily calculate group-wise means 
+with `rxSummary`. We just have to make a couple modifications to our code:
 
 
 ```{r summary_by_group}
@@ -210,7 +210,7 @@ depend on all of values of the variable in question at once. Consequently,
 ## Categorical Variables
 
 So far, we've focused on summary statistics for numeric variables, but for
-categorical variables, we typically turn to tables. RRE has two functions for 
+categorical variables, we typically turn to tables. MRS has two functions for 
 making tables and crosstabs: `rxCrossTabs` and `rxCube`.
 `rxCrossTabs` is the more traditional interface,
 generating a table where each unique combination of `x` and `y` is represented
@@ -374,10 +374,10 @@ Another example is data collected using stratified sampling, where some
 groups are oversampled during data collection and then weighted during analysis
 to reflect their actual population prevalence.
 
-Fortunately, many functions in RRE, including `rxSummary`, `rxCrossTabs`,
+Fortunately, many functions in MRS, including `rxSummary`, `rxCrossTabs`,
 `rxCube`, and most of the statistical models, can adjust their results to
 accommodate  weights. Let's look at an example. First, let's load up some US
-Census data that's included with RRE:
+Census data that's included with MRS:
 
 
 ```{r get_census}
@@ -390,8 +390,8 @@ rxDataStep(censusData, numRows = 10)
 ```
 
 Using `rxDataStep` to check the first few rows, I can see a variable called
-"per weight" that's probably my weighting variable - but to be sure, I can take a
-quick look at the help file for this dataset:
+"per weight" that's probably my weighting variable - but to be sure, I can 
+take a quick look at the help file for this dataset:
 
 ```{r census_help}
 
@@ -400,9 +400,9 @@ quick look at the help file for this dataset:
 ```
 
 Here in the help file, I can see that each row in this dataset represents an
-entire group of people with the same age, sex, location, number of weeks worked, 
-and approximate income, and that the "per weight" column is a count of how
-many such people there are in this entire sample.
+entire group of people with the same age, sex, location, number of weeks 
+worked, and approximate income, and that the "per weight" column is a count of 
+how many such people there are in this entire sample.
 
 There are two options for using weights: `fweights` for *frequency* weighting
 variables, and `pweights` for *probability* weighting variables. Since

@@ -32,7 +32,7 @@ would be likely to get a higher-grade `cut`. A good first step towarding
 investigating that idea would be to crosstabulate those two factors and see if
 there's a noticeable relationship.
 
-RRE includes two functions for crosstabs: `rxCrossTabs`, which produces the
+MRS includes two functions for crosstabs: `rxCrossTabs`, which produces the
 classic frequency table, and `rxCube`, which produces a row for every unique
 combination of its input variables. They both use the same formula syntax, with
 a `:` separating the input variables:

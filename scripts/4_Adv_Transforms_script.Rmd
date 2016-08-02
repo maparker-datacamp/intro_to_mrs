@@ -1,7 +1,7 @@
 
 
 
-# Data Management with RRE:    
+# Data Management with MRS:    
 # Advanced Transformations
 
 
@@ -34,10 +34,10 @@ An even more complex kind of transformation is one in which each value depends
 on another specific value in the dataset. Lagging a variable is a great example
 of this. If we want to predict Tuesday's high temperature with Monday's high,
 we've got to get Monday's high into Tuesday's record - we want to shift that
-entire variable down one row. In RRE, that means that we have to figure out
+entire variable down one row. In MRS, that means that we have to figure out
 how to communicate across chunks - how to send the last value of our first
 chunk to become the first value in our second. We'll cover exactly how to do
-that in this session of Data Management for Revolution R Enterprise.
+that in this session of Data Management for Microsoft R Server.
 
 
 
@@ -292,8 +292,8 @@ but it shouldn't happen beyond that. In this setup, however, the chunks have
 no way to get that dropped last value from the previous chunk, so they end up
 with missing values that could seriously compromise an analysis.
 
-Fortunately, RRE has tools that enable chunks to communicate with each other.
-Let's take a look at what a lagging function would look like in RRE.
+Fortunately, MRS has tools that enable chunks to communicate with each other.
+Let's take a look at what a lagging function would look like in MRS.
 
 
 ```{r lag_func}
@@ -340,9 +340,9 @@ newName is the desired name of the lagged variable, which I'll set using
 transformObjects in just a minute.
 
 If this isn't the very first chunk, we have to fetch the previous
-value from the previous chunk. To do that, we use the special function dot rxGet,
-which retrieves the value of an object called "lastValue" and an inserts that
-as the first value.
+value from the previous chunk. To do that, we use the special function dot 
+rxGet, which retrieves the value of an object called "lastValue" and an 
+inserts that as the first value.
 
 But that lastValue object doesn't just come from nowhere - we have to set it,
 and so the last step of the process - whether this is the first chunk, the
@@ -652,7 +652,7 @@ how to use rxFactors to safely create and modify factors.
 Above all, I hope I've demonstrated how important it is to carefully consider
 if the transformation you're applying will work on chunked data.
 
-Thankfully, the majority of functions in Revolution R Enterprise work on
+Thankfully, the majority of functions in Microsoft R Server work on
 chunked data without any special consideration. In the next session, we'll
 cover functions for summarizing your data, including descriptive statistics,
 crosstabs, and more.

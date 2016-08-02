@@ -1,8 +1,8 @@
 ---
-title: "Data Management with RRE:\nAdvanced Transformations"
+title: "Data Management with MRS:\nAdvanced Transformations"
 output: pdf_document
 toc: FALSE
-knit: "RevoKnitR::rx_compile_rmd"
+knit: "msknit::msknit"
 navigation-symbols: FALSE
 aspect-ratio: 169
 number-frames: FALSE

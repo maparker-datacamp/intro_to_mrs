@@ -35,7 +35,7 @@ several source files into one XDF file.
 
 *** =instructions
 
-So far, we've only worked with one year of mortgage default data, but RRE comes
+So far, we've only worked with one year of mortgage default data, but MRS comes
 with ten years of that data. Each year has its own CSV file. In this exercise,
 you'll combine all ten into a single XDF file.
 
@@ -145,7 +145,7 @@ test_expression_output(rxGetInfo(mortgageXdf)$numRows,
                        incorrect_msg = "Your XDF doesn't seem to have the right number of records - check your results again.")
 
 
-success_msg("Looks good! This is a good example of combining functions from both open-source R and RRE to make your analysis simpler.")
+success_msg("Looks good! This is a good example of combining functions from both open-source R and MRS to make your analysis simpler.")
 
 ```
 
@@ -158,7 +158,7 @@ success_msg("Looks good! This is a good example of combining functions from both
 
 ## Exercise 7: Import with a Data Source
 
-RRE connects to different data sources using "data source" functions, but sometimes
+MRS connects to different data sources using "data source" functions, but sometimes
 you'll want to create a data source directly.
 
 *** =instructions
@@ -169,7 +169,7 @@ manually can be useful for a variety of reasons:
 
  - Greater control over how data is imported to XDF (setting delimiters, SAS 
    import options, etc.)
- - The ability to use RRE functions directly on source data files if XDF files
+ - The ability to use MRS functions directly on source data files if XDF files
    can't be used
  - The option to use some Open-Source R functions directly on files (CSV, SAS,
    XDF, etc.)
@@ -320,7 +320,7 @@ test_expression_output(rxGetInfo(claimsCsvSource),
 
 
 
-success_msg("Looks good! This is a good example of combining functions from both open-source R and RRE to make your analysis simpler.")
+success_msg("Looks good! This is a good example of combining functions from both open-source R and MRS to make your analysis simpler.")
 
 ```
 

@@ -1,13 +1,13 @@
 
 
 
-# Data Management with RRE:    
+# Data Management with MRS:    
 # Simple Transformations
 
 
 ## Intro
 
-Welcome to Data Management with Revolution R Enterprise. People love to say 
+Welcome to Data Management with Microsoft R Server. People love to say 
 that getting the data clean is 80% of the work in data analysis. If anything,
 that's a low estimate. Chances are that you're going to be spending a lot of
 time checking your variables for weird values, removing erroneous records,
@@ -52,7 +52,7 @@ through 2010. But if I didn't have that variable, or if
 I needed to know the exact dates, I'd have to do some work.
 
 In open-source R, we'd probably just use the as.Date function to create a 
-new variable on the data.frame. In Revolution R Enterprise, the idea is the
+new variable on the data.frame. In Microsoft R Server, the idea is the
 same - but because I'm working with an XDF file, I need to use a Revolution R
 function called rxDataStep. rxDataStep is the key function for working with
 XDF files, so you'll see a lot of it in this session.
@@ -87,7 +87,7 @@ feel more normal after we've looked at a few examples of transforming
 multiple variables.
 
 Finally, because I'm modifying *all* of the chunks in the XDF file, I need
-to set overwrite to TRUE. RRE always wants you to think twice before you risk
+to set overwrite to TRUE. MRS always wants you to think twice before you risk
 overwriting data, which means we'll use overwrite a lot during this phase of
 the analysis.
 
@@ -143,7 +143,7 @@ another important feature of rxDataStep: variables that you create in the
 transforms list can be immediately used in subsequent transformations.
 
 Remember: when you're dealing with really big data, one of the major
-bottlenecks is just reading and writing the data. RRE and its functions are
+bottlenecks is just reading and writing the data. MRS and its functions are
 designed to let you do that as little as possible - so it's a good idea
 to combine as many of your transformations into a single rxDataStep as possible.
 
@@ -233,7 +233,7 @@ rxDataStep(inData = xdfSubset,
 ```
 
 Subsetting with a combination of varsToKeep, varsToDrop, and rowSelection 
-is a great way to dramatically speed up your analyses. The less data RRE has
+is a great way to dramatically speed up your analyses. The less data MRS has
 to read in, the faster it goes.
 
 
@@ -351,7 +351,7 @@ rxGetInfo(xdfSubset)
 ... we can see that there are four chunks, one for each of the four
 days of maximum volume.
 
-This is a danger every time you want to do something in RRE that depends on
+This is a danger every time you want to do something in MRS that depends on
 values that might be on other chunks - min and max, mean and median, lagging
 a variable, and so on. Fortunately, it's usually pretty easy to calculate
 these statistics separately and then pass them to rxDataStep. First,
@@ -418,7 +418,7 @@ rxDataStep, and passed in using the transformObjects argument.
 
 You might wonder why we had to explicitly pass the minimum and maximum
 volume statistics into rxDataStep using the transformObjects argument. Part of
-the reason is that Revolution R Enterprise is built with distributed computing
+the reason is that Microsoft R Server is built with distributed computing
 in mind, and so some chunks of data could be processed on other computers
 that don't have access to your R workspace. Remember, the XDF file is on disk,
 not in your R workspace. But if you pass the min and max

@@ -1,7 +1,7 @@
 ---
 title: 'Sorting and Deduplication'
-author: 'Revolution Analytics'
-knit: "RevoKnitR::rx_compile_rmd"
+author: 'Microsoft'
+knit: "msknit::msknit"
 header-icons: 
   - "REV_Icon_Consulting_RGB"
   - "REV_Icon_TrainingServices_RGB"

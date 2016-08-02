@@ -1,5 +1,5 @@
 ---
-title       : Introduction
+title       : Importing Data
 description : Introduction to the eXternal Data Frame (XDF) file format.
 attachments :
   slides_link : https://s3.amazonaws.com/assets.datacamp.com/course/teach/slides_example.pdf

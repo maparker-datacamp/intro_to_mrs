@@ -1,61 +1,153 @@
-﻿************************WELCOME SLIDE****************************
+************************WELCOME SLIDE****************************
 
-Hello and Welcome! In this session, we will discuss the organization of Revolution R Enterprise and where users can go to receive help. At the end of this session, you should be able to identify the packages that are contained in RRE, understand the organization of the functions within these packages, and know how to find help through the official documentation. 
+Hello and Welcome! In this session, we will discuss the organization of 
+Microsoft R Server and where users can go to receive help. At the end of this 
+session, you should be able to identify the packages that are contained in 
+MRS, understand the organization of the functions within these packages, and 
+know how to find help through the official documentation. 
 
-We have previously discussed Revolution R Enterprise as a single software product. The reality of RRE is that it is a complex piece of software which has a wide range of tools and functions ranging from creating Web Services to standard statistical analysis. In order to make it easy for the user to find a tool or a function, Revolution R Enterprise is split into a few different functional groups to address different aspects of RRE. Understanding the architecture of RRE will help you go a long way towards making efficient use of the overall product. 
+We have previously discussed Microsoft R Server as a single software product. 
+The reality of MRS is that it is a complex piece of software which has a wide 
+range of tools and functions ranging from creating Web Services to standard 
+statistical analysis. In order to make it easy for the user to find a tool or 
+a function, Microsoft R Server is split into a few different functional groups 
+to address different aspects of MRS. Understanding the architecture of MRS 
+will help you go a long way towards making efficient use of the overall 
+product. 
 
-RRE’s functional groups consist of the following parts: DevelopR, DeployR, ConnectR, ScaleR, and DistributedR. 
+MRS’s functional groups consist of the following parts: DevelopR, DeployR, 
+ConnectR, ScaleR, and DistributedR. 
 
 
-DevelopR is a visual development environment with a ‘step into’ debugger. It is part of the Windows installation of RRE, and is an easy way for users to develop RRE scripts. DeployR is a web services software development kit for integrating analytics via Java, Javascript, or .NET APIs. It invokes R scripts from Web Services calls, has a RESTful interface for easy integration, and works well with web and mobile apps.
+DevelopR is a visual development environment with a ‘step into’ debugger. 
+It is part of the Windows installation of MRS, and is an easy way for users to 
+develop MRS scripts. DeployR is a web services software development kit for 
+integrating analytics via Java, Javascript, or .NET APIs. It invokes R scripts 
+from Web Services calls, has a RESTful interface for easy integration, and 
+works well with web and mobile apps.
 
-In other sessions, we briefly talked about the RevoScaleR package which ships with Revolution R Enterprise. Three of the components mentioned earlier - ConnectR, ScaleR, and DistributedR - make up the RevoScaleR package. These components help users create easy, scalable solutions.
+In other sessions, we briefly talked about the RevoScaleR package which ships 
+with Microsoft R Server. Three of the components mentioned earlier - ConnectR, 
+ScaleR, and DistributedR - make up the RevoScaleR package. These components 
+help users create easy, scalable solutions.
 
-ConnectR is a component consisting of several functions designed to allow easy access to a variety of data sources such as SQL ODBC, Hadoop HDFS, or Teradata Database. ConnectR functions are able to seamlessly access data from these data sources and generate XDF files, which can then be used for parallelized analytics. Examples of ConnectR functions are RxOdbcData(), which opens up an ODBC connection or RxHadoopMr(), which sets up a compute context for a Hadoop Cluster.  
+ConnectR is a component consisting of several functions designed to allow easy 
+access to a variety of data sources such as SQL ODBC, Hadoop HDFS, or Teradata 
+Database. ConnectR functions are able to seamlessly access data from these 
+data sources and generate XDF files, which can then be used for parallelized 
+analytics. Examples of ConnectR functions are RxOdbcData(), which opens up an 
+ODBC connection or RxHadoopMr(), which sets up a compute context for a Hadoop 
+Cluster.  
 
-ScaleR is a component consisting of several functions designed to handle parallelized, scalable big data analytics. These functions are there to assist users in preparing data, gathering descriptive stats and statistical tests, constructing correlation and covariance matrices, predictive modeling, and machine learning. Examples of ScaleR functions are rxSummary() for descriptive statistics or rxLinMod() for building linear regression models.  
+ScaleR is a component consisting of several functions designed to handle 
+parallelized, scalable big data analytics. These functions are there to assist 
+users in preparing data, gathering descriptive stats and statistical tests, 
+constructing correlation and covariance matrices, predictive modeling, and 
+machine learning. Examples of ScaleR functions are rxSummary() for descriptive 
+statistics or rxLinMod() for building linear regression models.  
 
- DistributedR is a framework which allows for easy distribution of RRE across a variety of different platforms. RRE makes it so that the only change a user has to make when moving a solution from one platform to another is to specify the platform. For example, if a user created a solution at a workstation and wants to deploy it onto an LSF Cluster, all he has to do is change a single line of code specifying the new environment. In other words, nothing except the compute context of the RRE solution has to change. There is no extra code needed to deploy solutions across platforms, which is why Revolution R Enterprise is so flexible.   
+ DistributedR is a framework which allows for easy distribution of MRS across 
+a variety of different platforms. MRS makes it so that the only change a user 
+has to make when moving a solution from one platform to another is to specify 
+the platform. For example, if a user created a solution at a workstation and 
+wants to deploy it onto an LSF Cluster, all he has to do is change a single 
+line of code specifying the new environment. In other words, nothing except 
+the compute context of the MRS solution has to change. There is no extra code 
+needed to deploy solutions across platforms, which is why Microsoft R Server 
+is so flexible.   
 
-We just got an idea of how Revolution R Enterprise is organized. Together, these components allow users to develop end-to-end data driven solutions. While DeployR, DevelopR, and DistributedR act as frameworks for RRE, ConnectR and ScaleR contain the functions with which users write their scripts. We briefly looked at some examples of RRE functions in a previous session, but now we will look at them in more depth. 
+We just got an idea of how Microsoft R Server is organized. Together, these 
+components allow users to develop end-to-end data driven solutions. While 
+DeployR, DevelopR, and DistributedR act as frameworks for MRS, ConnectR and 
+ScaleR contain the functions with which users write their scripts. We briefly 
+looked at some examples of MRS functions in a previous session, but now we 
+will look at them in more depth. 
 
-All functions in RevoScaleR begin with “rx”  Functions that begin with a lowercase “r” are part of the ScaleR component, which is comprised of functions meant to handle the stages of data preparation and processing in a scalable manner. Some ScaleR functions that are commonly used in a workflow are listed here 
+All functions in RevoScaleR begin with “rx”  Functions that begin with a 
+lowercase “r” are part of the ScaleR component, which is comprised of 
+functions meant to handle the stages of data preparation and processing in a 
+scalable manner. Some ScaleR functions that are commonly used in a workflow 
+are listed here 
 (slide).
-rxImport() is a function that imports data from a data source into the XDF format. rxDataStep() is a complex, multipurpose function which provides a variety of ways to filter and clean data. rxSummary(), as its name suggests, produces summary statistics of the data in question. rxLinMod() and rxLogit() build linear and logistic models respectively. 
+rxImport() is a function that imports data from a data source into the XDF 
+format. rxDataStep() is a complex, multipurpose function which provides a 
+variety of ways to filter and clean data. rxSummary(), as its name suggests, 
+produces summary statistics of the data in question. rxLinMod() and rxLogit() 
+build linear and logistic models respectively. 
 
-As you can see, the types of functions available in RRE are quite diverse, ranging from creating XDF files to running descriptive statistics to building models. Another important aspect of these functions to note is that they are built to look very similar to their Open Source R counterparts. For example, lm() is R’s function for linear regression. Lm() takes a formula and a data set as inputs to generate a linear model. rxLinMod() works in exactly the same way, also expecting a formula and data to generate results. The difference, as we have mentioned before, is that lm() requires the data to be held in memory while being analyzed, while rxLinMod can generate results straight from the file system where the data is stored. 
+As you can see, the types of functions available in MRS are quite diverse, 
+ranging from creating XDF files to running descriptive statistics to building 
+models. Another important aspect of these functions to note is that they are 
+built to look very similar to their Open Source R counterparts. For example, 
+lm() is R’s function for linear regression. Lm() takes a formula and a data 
+set as inputs to generate a linear model. rxLinMod() works in exactly the same 
+way, also expecting a formula and data to generate results. The difference, as 
+we have mentioned before, is that lm() requires the data to be held in memory 
+while being analyzed, while rxLinMod can generate results straight from the 
+file system where the data is stored. 
 
-Functions with an upper case “Rx” are part of the ConnectR component of RevoScaleR. These functions, unlike those we looked at earlier, are rx-class generating functions. These functions are primarily responsible for setting up compute contexts with different data sources such as SQL ODBC or Teradata. Examples of ConnectR functions are listed here.
+Functions with an upper case “Rx” are part of the ConnectR component of 
+RevoScaleR. These functions, unlike those we looked at earlier, are rx-class 
+generating functions. These functions are primarily responsible for setting up 
+compute contexts with different data sources such as SQL ODBC or Teradata. 
+Examples of ConnectR functions are listed here.
+
+
 [slide]
-The names of the functions explain the type of connection they create. RxHadoopMR sets up a compute context for a Hadoop cluster, and takes arguments which ask for fairly intuitive information such as the shared directory and the user’s SSH login and password.  RxOdbcData sets up a connection with SQL ODBC. Some of the arguments it asks for are the specific table name, an SQL query, a database name, and a connection string which contains the authentication information. RxLSFCluster and RxTeradata are similar, each asking for fairly typical information in their arguments to create connections to their respective data sources. 
+The names of the functions explain the type of connection they create. 
+RxHadoopMR sets up a compute context for a Hadoop cluster, and takes arguments 
+which ask for fairly intuitive information such as the shared directory and 
+the user’s SSH login and password.  RxOdbcData sets up a connection with SQL 
+ODBC. Some of the arguments it asks for are the specific table name, an SQL 
+query, a database name, and a connection string which contains the 
+authentication information. RxLSFCluster and RxTeradata are similar, each 
+asking for fairly typical information in their arguments to create connections 
+to their respective data sources. 
 
-We have talked about how RRE is broken down and about how the functions in RevoScaleR are organized. There is extensive documentation on all of the topics we have discussed, and in the next part of the lesson, we will cover how you can quickly and easily access these resources. 
+We have talked about how MRS is broken down and about how the functions in 
+RevoScaleR are organized. There is extensive documentation on all of the 
+topics we have discussed, and in the next part of the lesson, we will cover 
+how you can quickly and easily access these resources. 
 	
-First, the Revolution Analytics website is a great place to start exploring where and how Revolution R Enterprise is implemented. 
+First, the Microsoft website is a great place to start exploring where and how 
+Microsoft R Server is implemented. 
 
-The resources tab contains webinars, datasheets, whitepapers, case studies, and videos about RRE. These resources sometimes address specific topics about RRE, such as how to implement deployR, or talk generally about the features of the newest release of RRE. 
+The resources tab contains webinars, datasheets, whitepapers, case studies, 
+and videos about MRS. These resources sometimes address specific topics about 
+MRS, such as how to implement deployR, or talk generally about the features of 
+the newest release of MRS. 
 
-Revolution Analytics also has a blog at  blog.revolutionanalytics.com with many useful tips and relevant information about different aspects and features of Revolution R Enterprise. 
-In addition to these resources, RRE is also a supported platform, meaning that users can contact Technical Support about any issue they are having.
+Microsoft also has a blog at  blog.revolutionanalytics.com with many useful 
+tips and relevant information about different aspects and features of 
+Microsoft R Server. 
+In addition to these resources, MRS is also a supported platform, meaning that 
+users can contact Technical Support about any issue they are having.
 
-From within the Revolution R Enterprise command line, users can enter help(package=RevoScaleR) to see a full list of the functions in the RevoScaleR package. 
+From within the Microsoft R Server command line, users can enter 
+help(package=RevoScaleR) to see a full list of the functions in the RevoScaleR 
+package. 
 
-This will open up a page describing RRE and provide a full list of the functions and datasets that are associated with it. Users can click on any function to see a detailed description, and a list of its arguments and what they do. This page also contains links to a description file, various vignettes, user guides, general documentation, and news about RevoScaleR.  
+This will open up a page describing MRS and provide a full list of the 
+functions and datasets that are associated with it. Users can click on any 
+function to see a detailed description, and a list of its arguments and what 
+they do. This page also contains links to a description file, various 
+vignettes, user guides, general documentation, and news about RevoScaleR.  
 
-Let’s summarize what we’ve covered so far
--	We broke RRE down into its functional groups (DevelopR, DeployR, ScaleR, ConnectR, and DistributedR)
--	We covered the functions of the RevoScaleR package and
-o	How they are organized
-o	Why they are organized this way
-o	and Their variety and the different ways users can implement them
--	We talked about various Resources and Documentation, including the
-o	Revolution Website, which contains
-	Whitepapers, webinars, and other informational resources
-o	the official Revolution Analytics Blog
-o	access to Technical Support
-o	and how to use help(package==RevoScaleR) to get a full view of the package and its
-	Functions, where you have the ability to click on a function and see a full argument list,
-	 as well as Links to vignettes and other resources
+Let's summarize what we've covered so far
+ - We broke MRS down into its functional groups (DevelopR, DeployR, ScaleR, 
+   ConnectR, and DistributedR)
+ - We covered the functions of the RevoScaleR package and
+   - How they are organized
+   - Why they are organized this way, and
+   - Their variety and the different ways users can implement them
+ - We talked about various Resources and Documentation, including the
+   - The Microsoft R MSDN website, which can point you to whitepapers, webinars,
+     and other informational resources
+   - the official Microsoft Blog
+   - access to Technical Support
+   - and how to use help(package==RevoScaleR) to get a full view of the package 
+     and its functions, where you have the ability to click on a function and 
+     see a full argument list, as well as Links to vignettes and other resources
 
 
 

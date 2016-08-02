@@ -1,7 +1,7 @@
 ---
 title_meta  : Chapter 4
 title       : Merging In-Database and Out-of-Database Tables
-description : Using RRE to combine data from multiple sources
+description : Using MRS to combine data from multiple sources
 attachments :
  slides_link: 
 framework   : datacamp

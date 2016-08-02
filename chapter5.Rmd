@@ -1,6 +1,6 @@
 ---
 title_meta  : Chapter 1
-title       : Transformations in RRE
+title       : Transformations in MRS
 description : Introduction to transforming variables and subsetting XDF files.
 attachments :
  slides_link: 
@@ -291,7 +291,7 @@ entail these three expressions:
  - `disp_liters = disp * 0.016`
  - `wt_kg = wt * 0.454`
  
- The RRE syntax is nearly the same as a single transformation; just separate
+ The MRS syntax is nearly the same as a single transformation; just separate
  each variable with a comma inside the transforms `list`.
  
  Add these new variables to the existing `mtcarsXdf` file.
@@ -560,7 +560,7 @@ R, you might use the `subset` function:
     subset(mtcars, 
            gear == 4 & lp100km < 10)
 
-In Revolution R Enterprise, you can use `rxDataStep` to subset an XDF file.
+In Microsoft R Server, you can use `rxDataStep` to subset an XDF file.
 Use `rxDataStep`'s argument `rowSelection` to select the five cars in `mtcarsXdf`
 that meet these criteria.
 

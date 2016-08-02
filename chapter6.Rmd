@@ -34,7 +34,7 @@ sensitive to the scale of the input variables, like principal components
 analysis.
 
 In open-source R, you could standardize `x` like this: `(x - mean(x)) / sd(x)`.
-In Revolution R Enterprise, the idea is the same, but we have to calculate
+In Microsoft R Server, the idea is the same, but we have to calculate
 statistics like the mean and standard deviation outside of `rxDataStep`,
 then subsequently pass them into `rxDataStep` using the `transformObjects`
 argument.

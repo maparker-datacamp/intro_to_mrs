@@ -2,7 +2,7 @@
 title: 'Summary Statistics Slides'
 output: pdf_document
 toc: FALSE
-knit: "RevoKnitR::rx_compile_rmd"
+knit: "msknit::msknit"
 navigation-symbols: FALSE
 aspect-ratio: 169
 number-frames: FALSE
@@ -32,7 +32,7 @@ set.seed(42)
 ## Summarize Credit Score
 
 ```{r summarize_one, output.max = 15, eval = FALSE, tidy = FALSE}
-# Create a pointer to one of RRE's sample XDFs
+# Create a pointer to one of MRS's sample XDFs
 defaultData <- file.path(rxGetOption("sampleDataDir"), "mortDefaultSmall.xdf")
 
 # Summarize credit score

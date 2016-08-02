@@ -1,14 +1,14 @@
 
 
-# Data Management with RRE:    
+# Data Management with MRS:    
 # Importing Data
 
 
 ## Intro
 
-Welcome to Data Management with Revolution R Enterprise. In this session,
+Welcome to Data Management with Microsoft R Server. In this session,
 we're going to discuss some special ways of importing data that are unique to
-RRE, and that can dramatically improve the speed of your analyses.
+MRS, and that can dramatically improve the speed of your analyses.
 
 In Open-Source R, data resides in-memory by default - as a list, data.frame,
 and so on. That's a very useful default; the memory of your computer provides
@@ -23,7 +23,7 @@ of memory.
 
 ## The XDF File
 
-That's where RRE comes in. Rather than storing data in
+That's where MRS comes in. Rather than storing data in
 memory, we've developed a data structure called an XDF - an external data 
 frame - which is actually a file stored on your hard drive and read into
 memory as needed. XDF files have been optimized for big data
@@ -32,13 +32,13 @@ in three important ways:
 ### Chunking and PEMAs
 
 First, XDF files are designed to make reading *chunks* of data fast. 
-This is key for circumventing Open-Source R's memory limitations. RRE
+This is key for circumventing Open-Source R's memory limitations. MRS
 can read an XDF file one manageable chunk at a time, compute intermediate 
 results, and then clear that chunk away to make room for the next. Once all the
 chunks have been read and their intermediate results computed, a final result
 can be calculated.
 
-This is pretty different from the way Open-Source R does computations. RRE
+This is pretty different from the way Open-Source R does computations. MRS
 comes with a wide variety of data manipulation and machine learning algorithms
 to work with this chunking method. These algorithms are called PEMAs:
 
@@ -50,7 +50,7 @@ You'll learn more about how PEMAs work in our
 course titled "The Course Where You Learn About PEMAs"[TODO].
 
 Chunking and PEMAs are crucial for bypassing the memory limits of a *single*
-computer, but they also allow RRE users to take advantage of *distributed*
+computer, but they also allow MRS users to take advantage of *distributed*
 computing environments - whether that's a local compute cluster or an
 on-demand cloud. Chunks can be efficiently distributed across nodes, allowing
 complex computations to take advantage of as many resources as desired.
@@ -110,11 +110,11 @@ a process for maximum speed, you can experiment with different levels of
 XDF compression when you create the XDF file.
 
 
-## Importing Data into RRE
+## Importing Data into MRS
 
 Speaking of which - let's create an XDF! The workhorse function for 
 creating XDF files is rxImport, from the RevoScaleR package that's included
-with RRE. Its key arguments are simply "inData",
+with MRS. Its key arguments are simply "inData",
 which will often be a file path to a CSV, SAS, or SPSS file, and
 "outFile" - a path to the XDF file you'd like to create. When you run this
 command, rxImport will automatically detect the format of "inData" based on
@@ -316,7 +316,7 @@ that a multi-file import is no problem - although it does need a bit of
 scaffolding.
 
 For example, the mortgage default dataset included with
-your RRE installation is split into ten CSV files - one for each year of data.  
+your MRS installation is split into ten CSV files - one for each year of data.  
 First, I'll use base R's file system tools to get the full paths of each
 of the CSV files.
 
@@ -331,7 +331,7 @@ mortgage_data_paths <- list.files(rxGetOption("sampleDataDir"),
 
 ```
 
-I grab the location of the RRE sample datasets using rxGetOption,
+I grab the location of the MRS sample datasets using rxGetOption,
 then use the pattern-matching ability of R's list.files function to match
 only the mortgage datasets. I full.names to TRUE, so that I get the full
 path of the files.  That returns a vector of the file paths, which I assign 

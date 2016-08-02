@@ -9,12 +9,12 @@ rxOptions(reportProgress = 0)
 
 
 
-# Data Management with RRE:
+# Data Management with MRS:
 # Sorting and Deduplicating Datasets
 
 ## Intro
 
-Welcome back to Data Management with Revolution R Enterprise. Most of the time
+Welcome back to Data Management with Microsoft R Server. Most of the time
 when we're working with big data, it's a good idea to move the data as little
 as possible. The XDF file format is designed to make that easier by allowing
 chunks of data to be quickly read and distributed for computations, and allowing
@@ -25,7 +25,7 @@ But sometimes there's no good way to avoid rearranging the entire dataset.
 For example, in our session on advanced transformations, we created a lagged
 variable that required the entire dataset to be in chronological order.
 
-Merging datasets also requires sorting them. The RRE function for merging
+Merging datasets also requires sorting them. The MRS function for merging
 datasets will sort them for you automatically, but if you're planning to merge
 multiple datasets together, it can be a tremendous time-saver to do all of the
 sorting upfront.
@@ -33,7 +33,7 @@ sorting upfront.
 Finally, removing duplicate records from a dataset also typically involves 
 sorting the data first.
 
-In RRE, sorting and deduplication are all handled by the same function: 
+In MRS, sorting and deduplication are all handled by the same function: 
 `rxSort`. In this session, we'll cover how to use `rxSort` for all of these
 scenarios.
 

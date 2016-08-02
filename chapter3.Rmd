@@ -1,5 +1,4 @@
 ---
-title_meta  : Chapter 2
 title       : Simple Imports
 description : Create an XDF file using the rxImport function
 attachments :

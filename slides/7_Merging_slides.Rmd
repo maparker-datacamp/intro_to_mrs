@@ -1,8 +1,8 @@
 ---
-title: "Data Management with RRE:\nMerging Data"
+title: "Data Management with MRS:\nMerging Data"
 output: pdf_document
 toc: FALSE
-knit: "RevoKnitR::rx_compile_rmd"
+knit: "msknit::msknit"
 navigation-symbols: FALSE
 aspect-ratio: 169
 number-frames: FALSE
@@ -228,7 +228,7 @@ cbind(uc, lc)
 
 ```{r multiple_join, eval = FALSE, tidy = FALSE}
 
-# Joining three tables in RRE
+# Joining three tables in MRS
 rxMerge(inData = list(xdf1, xdf2, xdf3),
         matchVars = "id")
 

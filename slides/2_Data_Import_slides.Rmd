@@ -1,10 +1,10 @@
 ---
-title: "Data Management with RRE:\nImporting Data"
+title: "Data Management with MRS:\nImporting Data"
 output: 
   pdf_document: 
     fig_caption: false
 toc: FALSE
-knit: "RevoKnitR::rx_compile_rmd"
+knit: "msknit::msknit"
 navigation-symbols: FALSE
 aspect-ratio: 169
 number-frames: FALSE

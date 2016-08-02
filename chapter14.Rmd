@@ -1,6 +1,6 @@
 ---
 title_meta  : Chapter 1
-title       : Sorting and Deduplicating Data with Revolution R Enterprise
+title       : Sorting and Deduplicating Data with Microsoft R Server
 description : Sort big datasets and remove duplicate records
 attachments :
  slides_link: 
@@ -459,7 +459,7 @@ success_msg("That's right! As you can see, deduplication is a simple extension o
 *** =video_link
 
 ```{r, eval = FALSE}
-## Data Management with RRE Sorting Deduplicating 05 Other Arguments
+## Data Management with MRS Sorting Deduplicating 05 Other Arguments
 //player.vimeo.com/video/
 ```
 

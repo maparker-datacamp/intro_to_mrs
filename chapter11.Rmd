@@ -1,6 +1,6 @@
 ---
 title_meta  : Chapter 1
-title       : Introduction to Summary Statistics with Revolution R Enterprise
+title       : Introduction to Summary Statistics with Microsoft R Server
 description : Functions for describing and aggregating data
 attachments :
  slides_link: 

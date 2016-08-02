@@ -1,8 +1,8 @@
 ---
-title: "Getting Started with RRE"
+title: "Getting Started with MRS"
 output: pdf_document
 toc: FALSE
-knit: "RevoKnitR::rx_compile_rmd"
+knit: "msknit::msknit"
 navigation-symbols: FALSE
 aspect-ratio: 169
 number-frames: FALSE
@@ -19,19 +19,17 @@ opts_chunk$set(tidy = FALSE,
                output.max = 15
 )
 
-# I found more pictures:
-# cp ~/../siddarth.ramesh/github/Revolution_Course_Materials/DataCamp/Getting_Started_With_RRE/src/images/*.png .
 
 ```
 
 
 ## Learning Objectives
-* Packages constituting RRE
+* Packages constituting MRS
 * Organization of functions
 * Help and documentation
 
 
-## RRE Overview
+## MRS Overview
 
 \center{
   \Oldincludegraphics[height=5.4cm]{images/rre_components.png}
@@ -109,13 +107,13 @@ rxSetComputeContext(computeContext = myCluster)
 * `rxLinMod`: linear regression models
 * `rxLogit`: logistic regression models
 	
-## RRE counterparts in R
+## MRS counterparts in R
 
 ```{r eval=FALSE, size="normalsize"}
 # Open-Source R
 lm(DepDelay ~ DayOfWeek, airlines_dataframe)
 
-# RRE
+# MRS
 rxLinMod(DepDelay ~ DayOfWeek, "airlines.xdf")
 ```
 
@@ -143,7 +141,7 @@ rxImport(inData = claimsDS, outFile = claimsFile, overwrite = TRUE)
 
 ## Resources
 
-* __Revolution Analytics website:__ http://revolutionanalytics.com/resources
+* __Microsoft website:__ http://revolutionanalytics.com/resources
 * __User Guides:__ http://packages.revolutionanalytics.com/doc
 * __Revolutions blog:__ http://blog.revolutionanalytics.com
 * __Technical support:__ http://support.revolutionanalytics.com
@@ -164,7 +162,7 @@ help(package="RevoScaleR")
 
 
 
-## RRE Overview
+## MRS Overview
 
 \center{
   \Oldincludegraphics[height=5.4cm]{images/rre_components.png}

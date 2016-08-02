@@ -27,7 +27,7 @@ Use `rxFactors` to convert the `Year` variable into a factor.
 
 *** =instructions
 
-There are a couple of ways to create factors in RRE, but the `rxFactors` function
+There are a couple of ways to create factors in MRS, but the `rxFactors` function
 is the most powerful (and often the easiest). To simply create a factor from an
 existing variable, you can use the `factorInfo` argument.
 
@@ -173,7 +173,7 @@ test_expression_output(rxGetVarInfo(djia_factor_year)[["FactorYear"]][["varType"
                        incorrect_msg = "FactorYear was created, but it doesn't seem to be a factor - check your code again.")
 
 
-success_msg("Good work. That's the simplest way to create factors from other variables in RRE.")
+success_msg("Good work. That's the simplest way to create factors from other variables in MRS.")
 
 
 

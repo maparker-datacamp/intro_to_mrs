@@ -1,14 +1,14 @@
 ---
-title_meta  : Chapter 1
-title       : Getting Started With RRE
-description : Introduction to Revolution R Enterprise
+title       : Getting Started With MRS
+description : Introduction to Microsoft R Server
+---
 
 
 
 
 --- type:VideoExercise
 
-## Getting Started with RRE 
+## Getting Started with MRS 
 
 *** =video_link
 
@@ -28,7 +28,7 @@ Which of these is true about DevelopR?
 
 *** =instructions
 
-- DevelopR comes with the Linux installation of RRE
+- DevelopR comes with the Linux installation of MRS
 - DevelopR provides easier command line functionality
 - DevelopR is a web services software development kit for integration analytics
 - DevelopR is a visual development environment
@@ -50,7 +50,7 @@ addressed topic.
 
 test_mc(correct = 4, 
         no_selection_msg = "Please make a selection!", 
-        feedback_msgs = c("Incorrect - DevelopR is part of Windows RRE installations.",
+        feedback_msgs = c("Incorrect - DevelopR is part of Windows MRS installations.",
                           "Incorrect - try again.",
                           "Incorrect - that's the DeployR component.",
                           "Correct!",
@@ -91,11 +91,11 @@ addressed topic.
 
 test_mc(correct = 4, 
         no_selection_msg = "Please make a selection!", 
-        feedback_msgs = c("Incorrect - DistributedR is the RRE component for managing distributed computing contexts.",
-                          "Incorrect - DevelopR is the visual development environment included with RRE.",
-                          "Incorrect - DeployR is the RRE component for setting up web services.",
-                          "Correct! ScaleR is the RRE component that includes statistical and machine learning algorithms like linear models.",
-                          "Incorrect - ConnectR is the RRE component that enables connections to different data sources."
+        feedback_msgs = c("Incorrect - DistributedR is the MRS component for managing distributed computing contexts.",
+                          "Incorrect - DevelopR is the visual development environment included with MRS.",
+                          "Incorrect - DeployR is the MRS component for setting up web services.",
+                          "Correct! ScaleR is the MRS component that includes statistical and machine learning algorithms like linear models.",
+                          "Incorrect - ConnectR is the MRS component that enables connections to different data sources."
 ))
 
 ```
@@ -132,8 +132,8 @@ addressed topic.
 
 test_mc(correct = 1, 
         no_selection_msg = "Please make a selection!", 
-        feedback_msgs = c("Correct! In most cases, RRE code can be moved to a new platform by simply specifying a different 'compute context'.",
-                          "Incorrect - in most cases, RRE code can be moved to a new platform by simply specifying a different 'compute context'."
+        feedback_msgs = c("Correct! In most cases, MRS code can be moved to a new platform by simply specifying a different 'compute context'.",
+                          "Incorrect - in most cases, MRS code can be moved to a new platform by simply specifying a different 'compute context'."
 ))
 ```
 
