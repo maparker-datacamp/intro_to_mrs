@@ -1,13 +1,13 @@
 ---
-title_meta  : Chapter 1
 title       : Introduction
 description : Introduction to the eXternal Data Frame (XDF) file format.
 attachments :
- slides_link: 
+  slides_link : https://s3.amazonaws.com/assets.datacamp.com/course/teach/slides_example.pdf
 mode        : selfcontained
 
 
---- type:VideoExercise
+
+--- type:VideoExercise key:5b7c7478a3
 
 ## Introduction to the XDF File Format 
 
@@ -22,7 +22,7 @@ mode        : selfcontained
 
 
 
---- type:MultipleChoiceExercise contains_graph:FALSE
+--- type:MultipleChoiceExercise contains_graph:FALSE key:c49f768bfa
 
 ## Exercise 1: R and Big Data
 
@@ -63,7 +63,7 @@ test_mc(correct = 2,
 
 
 
---- type:MultipleChoiceExercise contains_graph:FALSE
+--- type:MultipleChoiceExercise contains_graph:FALSE key:cda00447a8
 
 ## Exercise 2: Advantages of PEMAs
 
@@ -110,7 +110,7 @@ test_mc(correct = 4,
 
 
 
---- type:MultipleChoiceExercise contains_graph:FALSE
+--- type:MultipleChoiceExercise contains_graph:FALSE key:afe0cbc507
 
 ## Exercise 3: Advantages of Column Orientation
 
@@ -157,7 +157,7 @@ test_mc(correct = 1,
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:79c81a7847
 
 ## Exercise 4: Import Data with rxImport
 
