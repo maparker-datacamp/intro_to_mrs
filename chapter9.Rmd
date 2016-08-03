@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:0e88193d3c
 
 ## Lagging a Variable 
 
@@ -19,7 +19,7 @@ mode        : selfcontained
 ```
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:a7f03b075a
 
 ## Exercise 4: Calculate Percent Change From Previous Day
   
@@ -253,7 +253,7 @@ success_msg("Well done. Passing data between chunks isn't easy, but it is essent
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:b7a89a1709
 
 
 ## Lagging by Merging 
