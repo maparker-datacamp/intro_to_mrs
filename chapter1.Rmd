@@ -6,7 +6,7 @@ description : Introduction to Microsoft R Server
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:7ec05016fa
 
 ## Getting Started with MRS 
 
@@ -19,7 +19,7 @@ description : Introduction to Microsoft R Server
 
 
 
---- type:MultipleChoiceExercise contains_graph:FALSE
+--- type:MultipleChoiceExercise contains_graph:FALSE key:b4b1950487
 
 ## Exercise 1
 
@@ -60,7 +60,7 @@ test_mc(correct = 4,
 ```
 
 
---- type:MultipleChoiceExercise contains_graph:FALSE
+--- type:MultipleChoiceExercise contains_graph:FALSE key:5b77eac930
 
 ## Exercise 2
 
@@ -102,7 +102,7 @@ test_mc(correct = 4,
 
 
 
---- type:MultipleChoiceExercise contains_graph:FALSE
+--- type:MultipleChoiceExercise contains_graph:FALSE key:65fdbe6501
 
 ## Exercise 3
 
@@ -141,7 +141,7 @@ test_mc(correct = 1,
 
 
 
---- type:MultipleChoiceExercise contains_graph:FALSE
+--- type:MultipleChoiceExercise contains_graph:FALSE key:01720f6259
 
 ## Exercise 4
 
