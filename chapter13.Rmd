@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:24fee5e68c
 
 ## Weighted Data
 
@@ -18,7 +18,7 @@ mode        : selfcontained
 //player.vimeo.com/video/141148549
 ```
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:fb28c2e31f
 
 ## Exercise 10: Weighted Means, Etc.
 
@@ -94,7 +94,7 @@ success_msg("Good work! As you can see, using weighted data is straightforward."
 *** =skills
 1, 3
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:927ac7de8f
 
 ## Exercise 11: Weighted Crosstabs
   
@@ -171,7 +171,7 @@ success_msg("Correct!")
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:7844c21a17
 
 ## Conclusion
 
