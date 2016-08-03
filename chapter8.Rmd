@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:5f36b06d71
 
 ## Introduction to Advanced Transformations
 
@@ -23,7 +23,7 @@ mode        : selfcontained
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:46b689c69a
 
 ## Scaling Multiple Variables
 
@@ -38,7 +38,7 @@ mode        : selfcontained
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:f0b098e813
 
 ## Exercise 1: Scale Multiple Variables with transforms
 
@@ -241,7 +241,7 @@ success_msg("Good work. There are more efficient ways to transform many variable
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:7414e6e2b5
 
 ## Exercise 2: Scale Multiple Variables with transformFunc
 
@@ -495,7 +495,7 @@ success_msg("Nicely done! This is one way to perform the same transformation on 
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:9ad741fddc
 
 
 ## Exercise 3: How to Break transformFunc
