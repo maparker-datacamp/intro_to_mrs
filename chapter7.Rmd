@@ -9,7 +9,7 @@ mode        : selfcontained
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:4595c668f6
 
 ## transformPackages 
 
@@ -19,7 +19,7 @@ mode        : selfcontained
 //player.vimeo.com/video/137220996
 ```
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:1548aa6473
 
 ## Exercise 7: transformPackages
   
@@ -130,7 +130,7 @@ success_msg("Well done! That's all it takes to use a package in your transformat
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:4c5c16901a
 
 ## Factors 
 
@@ -141,7 +141,7 @@ success_msg("Well done! That's all it takes to use a package in your transformat
 ```
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:130bd6b1ad
 
 ## Exercise 8: Factors
   
@@ -304,7 +304,7 @@ success_msg("Excellent! You've made a simple factor. We'll cover more complex fa
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:b75c358a50
 
 ## Conclusion 
 
