@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:340444fb77
 
 ## Introduction to Sorting and Deduplication
 
@@ -21,7 +21,7 @@ mode        : selfcontained
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:7e4f55872a
 
 ## The rxSort() Function
 
@@ -34,7 +34,7 @@ mode        : selfcontained
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:c88cb30f88
 
 ## Exercise 1: Sorting Data with rxSort
 
@@ -134,7 +134,7 @@ success_msg("Well done! It gets a little more complicated than this, but not muc
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:f6c809cfe4
 
 ## Exercise 2: Decreasing Sorts
 
@@ -234,7 +234,7 @@ success_msg("Nicely done.")
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:977dfa07a8
 
 ## Exercise 3: Sorting by Multiple Variables
 
@@ -340,7 +340,7 @@ success_msg("Well done! With the sortByVars and decreasing arguments, your sort 
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:8a586f52dc
 
 ## Exercise 4: Deduplicating a Data Set
 
@@ -452,7 +452,7 @@ success_msg("That's right! As you can see, deduplication is a simple extension o
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:a03856a205
 
 ## Other Arguments 
 
