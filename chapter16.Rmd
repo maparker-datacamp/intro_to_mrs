@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:12ee8e260f
 
 ## Types of Merges
 
@@ -20,7 +20,7 @@ mode        : selfcontained
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:9203aeb223
 
 ## Exercise 3: Merge Two Datasets
 
@@ -152,7 +152,7 @@ test_object("inner_joined",
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:f9f40cad41
 
 ## Exercise 4: Keep All Customer Records
 
@@ -277,7 +277,7 @@ test_object("left_joined",
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:74a2ee991c
 
 ## Exercise 5: Stack Two Tables
 
