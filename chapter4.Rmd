@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:ddbfc85f29
 
 ## Importing from Other Sources
 
@@ -24,7 +24,7 @@ mode        : selfcontained
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:87489ab930
 
 
 
@@ -153,7 +153,7 @@ success_msg("Looks good! This is a good example of combining functions from both
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:535764aa9b
 
 
 ## Exercise 7: Import with a Data Source
@@ -327,7 +327,7 @@ success_msg("Looks good! This is a good example of combining functions from both
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:3b77efe519
 
 ## Conclusion
 
