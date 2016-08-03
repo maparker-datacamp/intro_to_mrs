@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:df70737089
 
 ## Introduction to Summary Statistics
 
@@ -19,7 +19,7 @@ mode        : selfcontained
 ```
 
 
---- type:VideoExercise
+--- type:VideoExercise key:14e2e5d0d6
 
 ## Summarizing Numeric Variables 
 
@@ -29,7 +29,7 @@ mode        : selfcontained
 //player.vimeo.com/video/141148550
 ```
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:c556e044a9
 
 ## Exercise 1: Summarize a Numeric Variable
   
@@ -119,7 +119,7 @@ success_msg("Good work! That's all it takes to summarize a variable.")
 1, 3
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:4fbcab093f
 
 ## Exercise 2: Summarize a Factor Variable
   
@@ -209,7 +209,7 @@ success_msg("Nice work. Take a moment to see how the output changes for a factor
 *** =skills
 1, 3
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:c7b5f11645
 
 ## Exercise 3: Summarize Multiple Variables
   
@@ -305,7 +305,7 @@ success_msg("Excellent - you've learned the basics of rxSummary.")
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:ba7fad7458
 
 ## Groupwise Summaries
 
@@ -315,7 +315,7 @@ success_msg("Excellent - you've learned the basics of rxSummary.")
 //player.vimeo.com/video/141148547
 ```
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:9485f95e2f
 
 ## Exercise 4: Groupwise Summaries
 
@@ -424,7 +424,7 @@ success_msg("Excellent - you've learned the basics of rxSummary.")
 1, 3
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:1f73cf9683
 
 ## Exercise 5: Multiple Grouping Variables
   
@@ -534,7 +534,7 @@ success_msg("Good job - hopefully the formula syntax is becoming more familiar."
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:05fd8707fc
 
 ## Calculating Quantiles
 
@@ -545,7 +545,7 @@ success_msg("Good job - hopefully the formula syntax is becoming more familiar."
 ```
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:5bd1aeb7dc
 
 ## Exercise 6: Quantiles
 
@@ -629,7 +629,7 @@ success_msg("Good work!")
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:0949948d3f
 
 ## Exercise 7: Non-Default Quantiles
   
