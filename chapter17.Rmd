@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:58bb8d0c98
 
 ## Working with Databases
 
@@ -22,7 +22,7 @@ mode        : selfcontained
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:423b09a4c5
 
 ## Exercise 6: Set Up a Database Connection
 
@@ -121,7 +121,7 @@ test_object("flights",
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:f5894d53dc
 
 ## Exercise 7: Join Two Tables In-Database
 
@@ -220,7 +220,7 @@ test_object("flights",
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:019e300c3d
 
 ## Exercise 8: Import from Database to XDF
 
@@ -347,7 +347,7 @@ test_expression_result(rxDataStep(flights_xdf),
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:2bfaff6ad4
 
 ## Exercise 9: Set Factors on Import
 
