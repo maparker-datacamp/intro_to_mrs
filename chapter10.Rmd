@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:fc7029784a
 
 ## rxFactors 
 
@@ -18,7 +18,7 @@ mode        : selfcontained
 //player.vimeo.com/video/141147219
 ```
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:035acc9ee0
 
 ## Exercise 5: Creating Factors with rxFactors
 
@@ -188,7 +188,7 @@ success_msg("Good work. That's the simplest way to create factors from other var
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:6bcfe6fe36
 
 ## Exercise 6: Change a Factor's Sort Order
 
@@ -357,7 +357,7 @@ success_msg("Nicely done.")
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:b2f95abf6b
 
 ## Exercise 7: Custom Sorting Factors
 
@@ -491,7 +491,7 @@ success_msg("Well done. These lists can get complex, but you can always build th
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:1e326c710f
 
 ## Exercise 8: Recoding Factors
 
@@ -647,7 +647,7 @@ success_msg("Well done! Hopefully factors don't seem as intimidating now.")
 1, 3
 
 
---- type:VideoExercise
+--- type:VideoExercise key:df07d46b0d
 
 ## Conclusion 
 
