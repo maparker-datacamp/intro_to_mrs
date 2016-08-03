@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:62c44bf399
 
 ## Scaling a Variable 
 
@@ -19,7 +19,7 @@ mode        : selfcontained
 ```
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:094c165234
 
 ## Exercise 6: Standardizing a Variable
   
