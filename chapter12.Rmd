@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:160a48fdc1
 
 ## Categorical Variables
 
@@ -19,7 +19,7 @@ mode        : selfcontained
 ```
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:9bf5197cd8
 
 ## Exercise 8: Crosstabulation
   
@@ -125,7 +125,7 @@ success_msg("Good work! That's all it takes to summarize a variable.")
 *** =skills
 1, 3
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:45ab41ca36
 
 ## Exercise 9: Crosstabs for Three Variables
   
