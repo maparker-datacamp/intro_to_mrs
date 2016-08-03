@@ -8,7 +8,7 @@ framework   : datacamp
 mode        : selfcontained
 
 
---- type:VideoExercise
+--- type:VideoExercise key:8df2ccd0b6
 
 ## Introduction to Merging
 
@@ -21,7 +21,7 @@ mode        : selfcontained
 
 
 
---- type:MultipleChoiceExercise contains_graph:FALSE
+--- type:MultipleChoiceExercise contains_graph:FALSE key:c87764a448
 
 ## Exercise 1: Keys, IDs, and Matching Variables
 
@@ -99,7 +99,7 @@ test_mc(correct = 3,
 
 
 
---- type:MultipleChoiceExercise contains_graph:FALSE
+--- type:MultipleChoiceExercise contains_graph:FALSE key:9b23379db5
 
 ## Exercise 2: Different Types of Joins
 
