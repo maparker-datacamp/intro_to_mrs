@@ -6,7 +6,7 @@ attachments :
 framework   : datacamp
 mode        : selfcontained
 
---- type:VideoExercise
+--- type:VideoExercise key:f3ae6447c8
 
 ## Configuring rxImport 
 
@@ -24,7 +24,7 @@ mode        : selfcontained
 
 
 
---- type:VideoExercise
+--- type:VideoExercise key:d599f29945
 
 ## colClasses and colInfo
 
@@ -39,7 +39,7 @@ mode        : selfcontained
 
 
 
---- type:NormalExercise xp:50
+--- type:NormalExercise xp:50 key:577deb2218
 
 
 ## Exercise 5: rxImport Options
